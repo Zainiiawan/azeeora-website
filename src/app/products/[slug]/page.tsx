@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductPageClient from './ProductPageClient';
 import { config } from '@/lib/config';
+import { getEffectivePrice } from '@/lib/productUtils';
 
 async function getProductBySlug(slug: string) {
   try {
@@ -117,11 +118,7 @@ export default async function ProductPageServer({ params }: { params: Promise<{ 
     const settings = await getStoreSettings();
     const defaultShippingCost = settings?.defaultShippingCost ?? 200;
 
-    const effectivePrice = product.discount?.value 
-      ? (product.discount.type === 'percentage' 
-          ? product.basePrice * (1 - product.discount.value / 100) 
-          : Math.max(0, product.basePrice - product.discount.value))
-      : product.basePrice;
+    const effectivePrice = getEffectivePrice(product);
 
     const productJsonLd: any = {
       '@context': 'https://schema.org',
