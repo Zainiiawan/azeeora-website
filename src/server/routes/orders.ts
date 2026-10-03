@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { db, populate, Doc } from '../db';
+import { db, populate, newId, Doc } from '../db';
 import {
   Router,
   json,
@@ -21,6 +21,23 @@ import {
   notifyAdmins,
   restockOrderItems,
 } from '../commerce';
+import {
+  accountType,
+  bumpUserCounter,
+  findSponsor,
+  getMemberSettings,
+  isPartner,
+  onOrderPlaced,
+  onOrderStatusChange,
+  partnerDiscountPct,
+  postCredits,
+  postEntries,
+  recalcPendingCommission,
+  round,
+  unitBV,
+  walletSummary,
+  wholesaleTerms,
+} from '../members';
 import { updateOrderStatusSchema, ORDER_STATUS_LABELS, submitPaymentProofSchema, verifyPaymentSchema, MANUAL_PAYMENT_ACCOUNTS } from '../shared';
 import {
   sendOrderConfirmationEmail,
@@ -46,8 +63,11 @@ const addressSchema = z.object({
 const checkoutSchema = z.object({
   shippingAddress: addressSchema,
   billingAddress: addressSchema.optional(),
-  paymentMethod: z.enum(['cod', 'jazzcash', 'easypaisa']),
+  paymentMethod: z.enum(['cod', 'jazzcash', 'easypaisa', 'wallet']),
   couponCode: z.string().min(1).optional(),
+  refCode: z.string().max(20).optional(),
+  walletAmount: z.number().min(0).optional(),
+  pointsToRedeem: z.number().min(0).optional(),
   notes: z.string().max(500).optional(),
   guestInfo: z
     .object({ firstName: z.string().min(1), lastName: z.string().min(1), email: z.string().email(), phone: z.string().min(1) })
@@ -114,102 +134,296 @@ const pagination = (page: number, limit: number, total: number) => {
 };
 
 // ---------------------------------------------------------------------------
+// Quote: one place that prices a basket for the current buyer
+// ---------------------------------------------------------------------------
+type QuoteLine = { productId: string; variant?: string; quantity: number; image?: string; sku?: string };
+
+async function buildQuote(input: {
+  user?: Doc | null;
+  lines: QuoteLine[];
+  couponCode?: string;
+  city?: string;
+  refCode?: string;
+  walletAmount?: number;
+  pointsToRedeem?: number;
+}) {
+  const settings = await getSettings();
+  const ms = await getMemberSettings();
+  const buyer = input.user ? await db.users.findById(input.user._id) : null;
+  const buyerType = accountType(buyer);
+  const discountPct = buyerType === 'partner' ? partnerDiscountPct(ms, Number(buyer?.monthlyBV ?? 0)) : 0;
+
+  const items: any[] = [];
+  const notices: string[] = [];
+  let subtotal = 0;
+  let productDiscountTotal = 0;
+  let memberDiscount = 0;
+  let bv = 0;
+
+  for (const line of input.lines) {
+    const product = await db.products.findById(line.productId);
+    if (!product || !product.isActive) throw new NotFoundError(`Product ${line.productId}`);
+    if (product.isComingSoon) throw new BadRequestError(`Product ${product.name} is coming soon and cannot be ordered.`);
+    const priced: any = priceLine(product, line.variant, line.quantity, { image: line.image, sku: line.sku });
+    const retailUnit = priced.price;
+    let unit = retailUnit;
+    if (buyerType === 'partner' && discountPct > 0) {
+      unit = round(retailUnit * (1 - discountPct / 100));
+    } else if (buyerType === 'business') {
+      const terms = wholesaleTerms(product, retailUnit, ms);
+      if (line.quantity >= terms.minQty) unit = Math.min(retailUnit, terms.price);
+      else notices.push(`${product.name}: wholesale price applies from ${terms.minQty} units.`);
+    }
+    const lineBV = unitBV(product, retailUnit, ms) * line.quantity;
+    Object.assign(priced, {
+      retailPrice: retailUnit,
+      memberPrice: unit !== retailUnit ? unit : undefined,
+      price: unit,
+      salePrice: unit,
+      total: unit * line.quantity,
+      lineTotal: unit * line.quantity,
+      bv: lineBV,
+    });
+    memberDiscount += (retailUnit - unit) * line.quantity;
+    subtotal += priced.lineTotal;
+    productDiscountTotal += priced.productDiscount * line.quantity;
+    bv += lineBV;
+    items.push(priced);
+  }
+  if (items.length === 0) throw new BadRequestError('No items to checkout');
+
+  // Shipping: city rate, else default; free above threshold
+  let shippingCost: number | null = settings.defaultShippingCost;
+  if (input.city) {
+    const city = input.city.trim().toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase());
+    const cityRate = await db.shippingRates.findOne({ city: { $regex: `^${city}$` }, isActive: true });
+    if (cityRate) shippingCost = cityRate.cost;
+  } else {
+    shippingCost = null;
+  }
+  if (subtotal >= settings.freeShippingThreshold) shippingCost = 0;
+
+  // Coupon
+  let discount = 0;
+  let coupon: Doc | null = null;
+  let couponError: string | undefined;
+  const couponCode = input.couponCode ? String(input.couponCode).toUpperCase() : undefined;
+  if (couponCode) {
+    coupon = await db.coupons.findOne({ code: couponCode });
+    if (!coupon) couponError = 'Coupon not found';
+    else if (buyerType !== 'customer' && !ms.couponsForMembers) couponError = 'Coupons cannot be combined with partner or wholesale prices';
+    else if (!couponIsValid(coupon)) couponError = 'Coupon is not valid';
+    else if (coupon.perUserLimit && buyer && (coupon.usedBy ?? []).some((u: any) => String(u) === String(buyer._id))) {
+      couponError = 'Coupon usage limit reached for this user';
+    } else if (coupon.type === 'free_shipping') {
+      if (shippingCost !== null) shippingCost = 0;
+    } else {
+      let cItems = items.map((i) => ({ productId: String(i.product), quantity: i.quantity, unitPrice: i.price }));
+      let eligibleTotal = subtotal;
+      if (coupon.applicableProducts?.length) {
+        const allowed = new Set(coupon.applicableProducts.map(String));
+        cItems = cItems.filter((i) => allowed.has(i.productId));
+        eligibleTotal = items.filter((ci) => allowed.has(String(ci.product))).reduce((s, ci) => s + ci.total, 0);
+      }
+      discount = couponDiscount(coupon, eligibleTotal, { cartItems: cItems }) ?? 0;
+    }
+    if (couponError) coupon = null;
+  }
+
+  // Loyalty points
+  const pointsBalance = Number(buyer?.loyaltyPoints ?? 0);
+  let pointsRedeemed = 0;
+  let pointsValue = 0;
+  const wanted = Math.floor(Number(input.pointsToRedeem ?? 0));
+  if (buyer && wanted > 0) {
+    if (wanted < ms.minRedeemPoints) throw new BadRequestError(`You can redeem from ${ms.minRedeemPoints} points`);
+    pointsRedeemed = Math.min(wanted, pointsBalance);
+    pointsValue = Math.min(pointsRedeemed * ms.pointValueRs, Math.max(0, subtotal - discount));
+    pointsRedeemed = Math.ceil(pointsValue / Math.max(0.0001, ms.pointValueRs));
+  }
+
+  const total = Math.max(0, subtotal + (shippingCost ?? 0) - discount - pointsValue);
+
+  // Wallet
+  const wallet = buyer ? await walletSummary(buyer._id) : { available: 0, pending: 0, earned: 0, withdrawn: 0 };
+  const walletUsed = buyer ? Math.max(0, Math.min(Number(input.walletAmount ?? 0) || 0, wallet.available, total)) : 0;
+
+  // Who earns the referral commission
+  let sponsor: Doc | null = null;
+  if (buyerType !== 'business') {
+    if (buyer?.referredBy) sponsor = await db.users.findById(buyer.referredBy);
+    else if (input.refCode) sponsor = await findSponsor(input.refCode);
+    if (sponsor && (!isPartner(sponsor) || sponsor.isActive === false || sponsor._id === buyer?._id)) sponsor = null;
+  }
+  const commissionBase = Math.max(0, subtotal - discount - pointsValue);
+  const commission = sponsor ? round((commissionBase * ms.referralCommissionPct) / 100) : 0;
+
+  return {
+    buyer,
+    buyerType,
+    discountPct,
+    items,
+    notices,
+    subtotal,
+    retailSubtotal: subtotal + memberDiscount,
+    memberDiscount,
+    productDiscount: productDiscountTotal,
+    shippingCost,
+    coupon,
+    couponCode: coupon ? couponCode : undefined,
+    couponError,
+    discount,
+    pointsRedeemed,
+    pointsValue,
+    pointsBalance,
+    pointsEarned: buyer ? Math.floor(Math.max(0, total - (shippingCost ?? 0)) / Math.max(1, ms.loyaltyRsPerPoint)) : 0,
+    wallet,
+    walletUsed,
+    total,
+    amountDue: Math.max(0, total - walletUsed),
+    bv,
+    sponsor,
+    commission,
+    commissionPct: ms.referralCommissionPct,
+    settings: ms,
+  };
+}
+
+const quoteSchema = z.object({
+  items: z.array(z.object({ productId: z.string(), variant: z.string().optional(), quantity: z.number().min(1) })).optional(),
+  couponCode: z.string().optional(),
+  city: z.string().optional(),
+  refCode: z.string().max(20).optional(),
+  walletAmount: z.number().min(0).optional(),
+  pointsToRedeem: z.number().min(0).optional(),
+});
+
+async function linesFor(body: { items?: QuoteLine[] }, userId?: string) {
+  if (body.items && body.items.length > 0) return { lines: body.items, cartDoc: null as Doc | null };
+  if (!userId) throw new BadRequestError('Must provide items for guest checkout');
+  const cartDoc = await db.carts.findOne({ user: userId });
+  if (!cartDoc || (cartDoc.items ?? []).length === 0) throw new BadRequestError('Cart is empty');
+  const lines = cartDoc.items.map((i: any) => ({ productId: String(i.product), variant: i.variant, quantity: i.quantity, image: i.image, sku: i.sku }));
+  return { lines, cartDoc };
+}
+
+orders.post('/quote', optionalAuthenticate, validate(quoteSchema), async ({ body, user }) => {
+  const { lines } = await linesFor(body, user?._id);
+  const q = await buildQuote({ user, lines, couponCode: body.couponCode, city: body.city, refCode: body.refCode, walletAmount: body.walletAmount, pointsToRedeem: body.pointsToRedeem });
+  return json({
+    success: true,
+    message: 'Quote',
+    data: {
+      buyerType: q.buyerType,
+      discountPct: q.discountPct,
+      items: q.items.map((i) => ({ product: i.product, name: i.name, image: i.image, quantity: i.quantity, retailPrice: i.retailPrice, price: i.price, total: i.total, bv: i.bv })),
+      notices: q.notices,
+      retailSubtotal: q.retailSubtotal,
+      memberDiscount: q.memberDiscount,
+      subtotal: q.subtotal,
+      shippingCost: q.shippingCost,
+      couponCode: q.couponCode,
+      couponError: q.couponError,
+      discount: q.discount,
+      pointsBalance: q.pointsBalance,
+      pointsRedeemed: q.pointsRedeemed,
+      pointsValue: q.pointsValue,
+      pointsEarned: q.pointsEarned,
+      minRedeemPoints: q.settings.minRedeemPoints,
+      walletAvailable: q.wallet.available,
+      walletUsed: q.walletUsed,
+      total: q.total,
+      amountDue: q.amountDue,
+      bv: q.bv,
+      referredBy: q.sponsor ? `${q.sponsor.firstName} ${String(q.sponsor.lastName ?? '').slice(0, 1)}.` : null,
+    },
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Checkout
 // ---------------------------------------------------------------------------
 orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, user }) => {
   const userId = user?._id;
   const isGuest = !userId;
-  const { shippingAddress, billingAddress, paymentMethod, notes, guestInfo } = body;
+  const { shippingAddress, billingAddress, notes, guestInfo } = body;
+  let paymentMethod: string = body.paymentMethod;
 
   if (isGuest && !guestInfo) {
     throw new BadRequestError('Guest info (name, email, phone) is required for guest checkout');
   }
 
-  const finalItems: any[] = [];
-  let subtotal = 0;
-  let productDiscountTotal = 0;
-  let cartDoc: Doc | null = null;
-
-  const lines: Array<{ productId: string; variant?: string; quantity: number; image?: string; sku?: string }> = [];
-  if (body.items && body.items.length > 0) {
-    lines.push(...body.items);
-  } else {
-    if (!userId) throw new BadRequestError('Must provide items for guest checkout');
-    cartDoc = await db.carts.findOne({ user: userId });
-    if (!cartDoc || (cartDoc.items ?? []).length === 0) throw new BadRequestError('Cart is empty');
-    for (const i of cartDoc.items) {
-      lines.push({ productId: String(i.product), variant: i.variant, quantity: i.quantity, image: i.image, sku: i.sku });
-    }
-  }
-
-  for (const line of lines) {
-    const product = await db.products.findById(line.productId);
-    if (!product || !product.isActive) {
-      throw new NotFoundError(cartDoc ? 'Product' : `Product ${line.productId}`);
-    }
-    if (product.isComingSoon) throw new BadRequestError(`Product ${product.name} is coming soon and cannot be ordered.`);
-    const priced = priceLine(product, line.variant, line.quantity, { image: line.image, sku: line.sku });
-    subtotal += priced.lineTotal;
-    productDiscountTotal += priced.productDiscount * line.quantity;
-    finalItems.push(priced);
-  }
-  if (finalItems.length === 0) throw new BadRequestError('No items to checkout');
-
-  const couponCode: string | undefined = body.couponCode ?? cartDoc?.couponCode;
-
-  // Shipping: city rate, else default; free above threshold
-  const settings = await getSettings();
-  let shippingCost = settings.defaultShippingCost;
-  const city = shippingAddress.city.trim().toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase());
-  const cityRate = await db.shippingRates.findOne({ city: { $regex: `^${city}$` }, isActive: true });
-  if (cityRate) shippingCost = cityRate.cost;
-  if (subtotal >= settings.freeShippingThreshold) shippingCost = 0;
-
-  let discount = 0;
-  let coupon: Doc | null = null;
-  if (couponCode) {
-    coupon = await db.coupons.findOne({ code: String(couponCode).toUpperCase() });
-    if (!coupon) throw new NotFoundError('Coupon');
-    if (!couponIsValid(coupon)) throw new ForbiddenError('Coupon is not valid');
-    if (coupon.perUserLimit && coupon.usedBy?.length && userId) {
-      if ((coupon.usedBy ?? []).some((u: any) => String(u) === String(userId))) {
-        throw new ForbiddenError('Coupon usage limit reached for this user');
-      }
-    }
-    if (coupon.type === 'free_shipping') {
-      shippingCost = 0;
-    } else {
-      let items = finalItems.map((i) => ({ productId: String(i.product), quantity: i.quantity, unitPrice: i.price }));
-      let eligibleTotal = subtotal;
-      if (coupon.applicableProducts?.length) {
-        const allowed = new Set(coupon.applicableProducts.map(String));
-        items = items.filter((i) => allowed.has(i.productId));
-        eligibleTotal = finalItems.filter((ci) => allowed.has(String(ci.product))).reduce((s, ci) => s + ci.total, 0);
-      }
-      discount = couponDiscount(coupon, eligibleTotal, { cartItems: items }) ?? 0;
-    }
-  }
+  const { lines, cartDoc } = await linesFor(body, userId);
+  const q = await buildQuote({
+    user,
+    lines,
+    couponCode: body.couponCode ?? cartDoc?.couponCode,
+    city: shippingAddress.city,
+    refCode: body.refCode,
+    walletAmount: body.walletAmount,
+    pointsToRedeem: body.pointsToRedeem,
+  });
+  if (q.couponError && body.couponCode) throw new BadRequestError(q.couponError);
+  const finalItems = q.items;
+  const { subtotal, discount, coupon, total } = q;
+  const shippingCost = q.shippingCost ?? 0;
+  const productDiscountTotal = q.productDiscount;
+  const couponCode = q.couponCode;
+  if (q.amountDue === 0 && q.walletUsed > 0) paymentMethod = 'wallet';
+  if (paymentMethod === 'wallet' && q.amountDue > 0) throw new BadRequestError('Your wallet balance does not cover this order');
 
   const tax = 0;
-  const total = Math.max(0, subtotal + shippingCost + tax - discount);
   const isCod = paymentMethod === 'cod';
-  const initialStatus = isCod ? 'pending_confirmation' : 'pending';
-  const initialMessage = isCod
-    ? 'Order placed. Awaiting admin confirmation (Cash on Delivery).'
-    : `Order placed. Please send payment via ${paymentMethod === 'jazzcash' ? 'JazzCash' : 'Easypaisa'} and submit your transaction proof.`;
+  const isWallet = paymentMethod === 'wallet';
+  const initialStatus = isCod || isWallet ? 'pending_confirmation' : 'pending';
+  const initialMessage = isWallet
+    ? 'Order placed and paid from wallet. Awaiting confirmation.'
+    : isCod
+      ? 'Order placed. Awaiting admin confirmation (Cash on Delivery).'
+      : `Order placed. Please send payment via ${paymentMethod === 'jazzcash' ? 'JazzCash' : 'Easypaisa'} and submit your transaction proof.`;
 
-  // Reserve stock before creating the order so a failure leaves nothing behind
-  const touchedProducts = new Map<string, Doc>();
-  for (const item of finalItems) {
-    const product = touchedProducts.get(item.product) ?? (await db.products.findById(item.product));
-    if (!product || !product.isActive) throw new NotFoundError('Product');
-    deductStock(product, item);
-    touchedProducts.set(product._id, product);
+  // Spend points and wallet first (both atomic); undo them if anything after fails
+  const orderId = newId();
+  const orderNumber = await nextOrderNumber();
+  let pointsTaken = false;
+  let walletTaken = false;
+  if (userId && q.pointsRedeemed > 0) {
+    pointsTaken = await bumpUserCounter(userId, 'loyaltyPoints', -q.pointsRedeemed);
+    if (!pointsTaken) throw new BadRequestError('Not enough loyalty points');
   }
-  for (const product of touchedProducts.values()) await db.products.save(product);
+  try {
+    if (userId && q.walletUsed > 0) {
+      await postEntries([
+        { user: userId, type: 'order_payment', amount: -q.walletUsed, status: 'available', order: orderId, orderNumber, note: `Payment for order ${orderNumber}` },
+      ]);
+      walletTaken = true;
+    }
+
+    // Reserve stock before creating the order so a failure leaves nothing behind
+    const touchedProducts = new Map<string, Doc>();
+    for (const item of finalItems) {
+      const product = touchedProducts.get(item.product) ?? (await db.products.findById(item.product));
+      if (!product || !product.isActive) throw new NotFoundError('Product');
+      deductStock(product, item);
+      touchedProducts.set(product._id, product);
+    }
+    for (const product of touchedProducts.values()) await db.products.save(product);
+  } catch (err) {
+    if (pointsTaken && userId) await bumpUserCounter(userId, 'loyaltyPoints', q.pointsRedeemed);
+    if (walletTaken && userId) {
+      await postCredits([{ user: userId, type: 'order_refund', amount: q.walletUsed, status: 'available', order: orderId, orderNumber, note: 'Checkout did not complete' }]);
+    }
+    throw err;
+  }
+
+  // A customer who came through a partner's link stays linked to that partner
+  if (q.buyer && q.sponsor && !q.buyer.referredBy && q.buyerType === 'customer') {
+    await db.users.updateById(q.buyer._id, { referredBy: q.sponsor._id, referredAt: new Date().toISOString() });
+  }
 
   const order = await db.orders.create({
-    orderNumber: await nextOrderNumber(),
+    _id: orderId,
+    orderNumber,
     user: userId,
     customerType: isGuest ? 'guest' : 'registered',
     customerName: isGuest ? `${guestInfo?.firstName} ${guestInfo?.lastName}` : `${user?.firstName} ${user?.lastName}`,
@@ -223,17 +437,35 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
     productDiscount: productDiscountTotal,
     discount,
     manualDiscount: 0,
+    pointsDiscount: q.pointsValue,
+    walletUsed: q.walletUsed,
+    amountDue: q.amountDue,
     tax,
     total,
     couponCode: couponCode ? String(couponCode).toUpperCase() : undefined,
     couponDiscount: discount,
+    orderType: q.buyerType === 'business' ? 'b2b' : q.buyerType === 'partner' ? 'partner' : 'b2c',
+    member: {
+      buyerType: q.buyerType,
+      discountPct: q.discountPct,
+      memberDiscount: q.memberDiscount,
+      bv: q.bv,
+      sponsor: q.sponsor?._id,
+      sponsorCode: q.sponsor?.memberCode,
+      commission: q.commission,
+      commissionPct: q.sponsor ? q.commissionPct : 0,
+      pointsRedeemed: q.pointsRedeemed,
+      pointsEarned: q.pointsEarned,
+      walletUsed: q.walletUsed,
+    },
     paymentMethod,
-    paymentStatus: 'pending',
+    paymentStatus: q.amountDue === 0 ? 'paid' : 'pending',
     status: initialStatus,
     notes,
     trackingHistory: [{ status: initialStatus, message: initialMessage, timestamp: new Date().toISOString() }],
     auditLog: [],
   });
+  await onOrderPlaced(order);
 
   if (coupon) {
     coupon.usageCount = (coupon.usageCount ?? 0) + 1;
@@ -404,11 +636,25 @@ orders.patch('/:orderId/admin-edit', adminOnly, validate(adminEditSchema), async
 
     let newSubtotal = 0;
     let newProductDiscount = 0;
+    let newBV = 0;
     const newItems = [];
+    const ms = await getMemberSettings();
+    const member = order.member ?? {};
     for (const input of body.items) {
       const product = await loadProduct(input.product);
       if (!product || !product.isActive) throw new BadRequestError(`Product ${input.product} is invalid`);
-      const priced = priceLine(product, input.variant, input.quantity);
+      const priced: any = priceLine(product, input.variant, input.quantity);
+      // Keep the buyer's member price (partner discount / wholesale) on edited lines
+      const retailUnit = priced.price;
+      let unit = retailUnit;
+      if (member.buyerType === 'partner' && member.discountPct > 0) unit = round(retailUnit * (1 - member.discountPct / 100));
+      if (member.buyerType === 'business') {
+        const terms = wholesaleTerms(product, retailUnit, ms);
+        if (input.quantity >= terms.minQty) unit = Math.min(retailUnit, terms.price);
+      }
+      const lineBV = unitBV(product, retailUnit, ms) * input.quantity;
+      Object.assign(priced, { retailPrice: retailUnit, price: unit, salePrice: unit, total: unit * input.quantity, lineTotal: unit * input.quantity, bv: lineBV });
+      newBV += lineBV;
       newSubtotal += priced.lineTotal;
       newProductDiscount += priced.productDiscount * input.quantity;
       newItems.push(priced);
@@ -419,6 +665,14 @@ orders.patch('/:orderId/admin-edit', adminOnly, validate(adminEditSchema), async
     order.items = newItems;
     order.subtotal = newSubtotal;
     order.productDiscount = newProductDiscount;
+    if (order.member) {
+      const delta = newBV - Number(order.member.bv ?? 0);
+      if (delta && order.user && order.member.buyerType === 'partner' && !['cancelled', 'refunded'].includes(order.status)) {
+        await bumpUserCounter(order.user, 'monthlyBV', delta);
+        await bumpUserCounter(order.user, 'totalBV', delta);
+      }
+      order.member = { ...order.member, bv: newBV };
+    }
     hasChanges = true;
   }
 
@@ -435,7 +689,8 @@ orders.patch('/:orderId/admin-edit', adminOnly, validate(adminEditSchema), async
   const subtotal = order.subtotal || 0;
   const manual = order.manualDiscount || 0;
   if (manual > subtotal) throw new BadRequestError('Manual discount cannot exceed subtotal');
-  order.total = Math.max(0, subtotal - (order.couponDiscount || 0) - manual + (order.shippingCost || 0) + (order.tax || 0));
+  order.total = Math.max(0, subtotal - (order.couponDiscount || 0) - (order.pointsDiscount || 0) - manual + (order.shippingCost || 0) + (order.tax || 0));
+  order.amountDue = Math.max(0, order.total - (order.walletUsed || 0));
 
   if (hasChanges) {
     const withoutLog = (o: Doc) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== 'auditLog'));
@@ -454,6 +709,7 @@ orders.patch('/:orderId/admin-edit', adminOnly, validate(adminEditSchema), async
     ];
   }
   await db.orders.save(order);
+  if (hasChanges) await recalcPendingCommission(order);
 
   if (hasChanges) {
     const to = order.customerEmail || (order.user ? (await db.users.findById(order.user))?.email : null);
@@ -499,8 +755,10 @@ orders.patch('/:orderId/status', adminOnly, validate(updateOrderStatusSchema), a
   const isClosing = status === 'cancelled' || status === 'refunded';
   const wasClosed = previousStatus === 'cancelled' || previousStatus === 'refunded';
   if (isClosing && !wasClosed) await restockOrderItems(order.items ?? []);
+  if (status === 'delivered' && order.paymentMethod === 'cod' && order.paymentStatus !== 'paid') order.paymentStatus = 'paid';
 
   await db.orders.save(order);
+  await onOrderStatusChange(order, previousStatus);
 
   const label = ORDER_STATUS_LABELS[order.status] || order.status;
   let notifType = 'general';
@@ -543,7 +801,13 @@ orders.patch('/:orderId/status', adminOnly, validate(updateOrderStatusSchema), a
 orders.delete('/:orderId', adminOnly, async ({ params }) => {
   const order = await db.orders.findById(params.orderId);
   if (!order) throw new NotFoundError('Order');
-  if (order.status !== 'cancelled' && order.status !== 'refunded') await restockOrderItems(order.items ?? []);
+  if (order.status !== 'cancelled' && order.status !== 'refunded') {
+    await restockOrderItems(order.items ?? []);
+    // Deleting a live order undoes it like a cancellation (commission, wallet, points)
+    const previousStatus = order.status;
+    order.status = 'cancelled';
+    await onOrderStatusChange(order, previousStatus);
+  }
   await db.orders.deleteById(order._id);
   return json({ success: true, message: 'Order deleted successfully', data: { _id: order._id } });
 });

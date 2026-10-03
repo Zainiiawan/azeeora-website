@@ -18,6 +18,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from '../http';
+import { findSponsor } from '../members';
 import { generateRandomToken, hashToken, generateTokenPair, verifyRefreshToken } from '../jwt';
 import { sendPasswordResetOtpEmail, sendWelcomeEmail, sendOtpEmail } from '../email';
 import {
@@ -51,6 +52,8 @@ const authLimiter = rateLimit('auth', 15 * 60 * 1000, 20, 'Too many login attemp
 router.post('/register', authLimiter, validate(registerSchema), async ({ body }) => {
   const { firstName, lastName, email, password, phone } = body;
   const normalizedEmail = email.toLowerCase().trim();
+  const sponsor = await findSponsor(body.refCode);
+  const referral = sponsor ? { referredBy: sponsor._id, referredAt: new Date().toISOString() } : {};
 
   const existing = await db.users.findOne({ email: normalizedEmail });
   if (existing && existing.isEmailVerified) {
@@ -67,6 +70,7 @@ router.post('/register', authLimiter, validate(registerSchema), async ({ body })
 
   if (existing) {
     Object.assign(existing, { firstName, lastName, phone, password: await hashPassword(password), ...otpFields });
+    if (!existing.referredBy) Object.assign(existing, referral);
     await db.users.save(existing);
     await sendOtpEmail(normalizedEmail, firstName, otp);
     return json({
@@ -85,6 +89,7 @@ router.post('/register', authLimiter, validate(registerSchema), async ({ body })
     isEmailVerified: false,
     isActive: true,
     role: 'customer',
+    ...referral,
     ...otpFields,
     addresses: [],
     wishlist: [],

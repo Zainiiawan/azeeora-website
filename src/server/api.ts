@@ -5,6 +5,7 @@ import { cart, wishlist } from './routes/shopping';
 import { orders, payments } from './routes/orders';
 import { reviews, coupons, users, notifications, contact, analytics, shipping, settings } from './routes/admin';
 import { media } from './routes/media';
+import { members } from './routes/members';
 
 /** Every endpoint of the old Express API, mounted under /api. */
 export const api = new Router();
@@ -25,3 +26,4 @@ api.use('/notifications', notifications);
 api.use('/contact', contact);
 api.use('/shipping', shipping);
 api.use('/settings', settings);
+api.use('/members', members);

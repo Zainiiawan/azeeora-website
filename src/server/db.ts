@@ -306,6 +306,13 @@ export const db = {
   notifications: new Collection('notifications'),
   settings: new Collection('settings'),
   shippingRates: new Collection('shipping_rates'),
+  walletEntries: new Collection('wallet_entries'),
+  withdrawals: new Collection('withdrawals'),
+  campaigns: new Collection('campaigns'),
+  incentives: new Collection('incentives'),
+  trainings: new Collection('trainings'),
+  pickupPoints: new Collection('pickup_points'),
+  stockMovements: new Collection('stock_movements'),
 };
 
 /**

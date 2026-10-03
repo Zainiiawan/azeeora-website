@@ -40,6 +40,10 @@ export const createProductSchema = z.object({
   variants: z.array(productVariantSchema).optional().default([]),
   basePrice: z.number().min(0, 'Price must be positive'),
   compareAtPrice: z.number().min(0).optional(),
+  // Member programme: points per unit, wholesale price and minimum quantity
+  bv: z.number().min(0).optional(),
+  wholesalePrice: z.number().min(0).nullable().optional(),
+  wholesaleMinQty: z.number().int().min(1).nullable().optional(),
   stock: z.number().int().min(0, 'Stock must be non-negative'),
   lowStockThreshold: z.number().int().min(0).default(10),
   tags: z.array(z.string()).optional().default([]),

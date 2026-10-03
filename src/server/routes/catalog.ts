@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import slugify from 'slugify';
 import { db, isId, populateProducts, Doc } from '../db';
-import { Router, json, validate, adminOnly, NotFoundError } from '../http';
+import { Router, json, validate, adminOnly, optionalAuthenticate, NotFoundError } from '../http';
 import {
   createProductSchema,
   productFilterSchema,
@@ -72,7 +72,14 @@ products.get('/autocomplete', validate(autocompleteSchema, 'query'), async ({ qu
   });
 });
 
-products.get('/', validate(productFilterSchema, 'query'), async ({ query }) => {
+// Wholesale prices are only for admins (approved B2B accounts get them from /members/wholesale-prices)
+const stripWholesale = (list: Doc[], viewer?: Doc | null) => {
+  if (viewer?.role === 'admin') return list;
+  for (const p of list) delete p.wholesalePrice;
+  return list;
+};
+
+products.get('/', optionalAuthenticate, validate(productFilterSchema, 'query'), async ({ query, user }) => {
   const { category, subcategory, brand, minPrice, maxPrice, rating, tags, inStock, isFeatured, search, sortBy, page, limit } =
     query as any;
 
@@ -99,6 +106,7 @@ products.get('/', validate(productFilterSchema, 'query'), async ({ query }) => {
     db.products.find(filter, { sort, skip, limit }),
   ]);
   await populateProducts(items);
+  stripWholesale(items, user);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
   return json({
@@ -111,12 +119,13 @@ products.get('/', validate(productFilterSchema, 'query'), async ({ query }) => {
   });
 });
 
-products.get('/:slug', async ({ params }) => {
+products.get('/:slug', optionalAuthenticate, async ({ params, user }) => {
   const slug = params.slug;
   const filter = isId(slug) ? { $or: [{ _id: slug }, { slug }], isActive: true } : { slug, isActive: true };
   const product = await db.products.findOne(filter);
   if (!product) throw new NotFoundError('Product');
   await populateProducts([product]);
+  stripWholesale([product], user);
   return json({ success: true, message: 'Product fetched', data: product });
 });
 
