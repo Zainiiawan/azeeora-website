@@ -1,4 +1,6 @@
-import { Router, json, authenticate, requireEmailVerification, adminOnly, rateLimit, BadRequestError, Ctx } from '../http';
+import { Router, json, authenticate, requireEmailVerification, adminOnly, rateLimit, BadRequestError, UnauthorizedError, ForbiddenError, resolveUser, Ctx } from '../http';
+import { put } from '@vercel/blob';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { getCloudinary, hasRealCloudinary } from '../cloudinary';
 import { IMAGE_FORMATS, VIDEO_FORMATS, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE } from '../shared';
 import { testSmtpConnection } from '../email';
@@ -27,10 +29,26 @@ async function readFiles(ctx: Ctx, max: number): Promise<File[]> {
   return files;
 }
 
+// Vercel Blob (BLOB_READ_WRITE_TOKEN) is the default store; Cloudinary is used
+// instead when its keys are set.
+async function uploadToBlob(file: File) {
+  const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/^-+|-+$/g, '') || 'file';
+  const blob = await put(`azeeora-cosmetics/${safeName}`, file, {
+    access: 'public',
+    addRandomSuffix: true,
+    contentType: file.type,
+    cacheControlMaxAge: 60 * 60 * 24 * 365,
+  });
+  return { url: blob.url, publicId: `blob:${blob.pathname}`, alt: file.name };
+}
+
+async function uploadFile(file: File, useModeration: boolean) {
+  if (hasRealCloudinary()) return uploadToCloudinary(file, useModeration);
+  if (process.env.BLOB_READ_WRITE_TOKEN) return uploadToBlob(file);
+  throw new BadRequestError('File uploads are not configured. Set BLOB_READ_WRITE_TOKEN or CLOUDINARY_* env vars.');
+}
+
 async function uploadToCloudinary(file: File, useModeration: boolean) {
-  if (!hasRealCloudinary()) {
-    throw new BadRequestError('Image upload requires Cloudinary. Configure CLOUDINARY_* env vars.');
-  }
   const cloudinary = getCloudinary();
   const isVideo = (VIDEO_FORMATS as readonly string[]).includes(file.type);
   const options: Record<string, unknown> = { folder: 'azeeora-cosmetics', resource_type: isVideo ? 'video' : 'image' };
@@ -57,14 +75,40 @@ async function uploadToCloudinary(file: File, useModeration: boolean) {
 media.post('/upload', authenticate, requireEmailVerification, uploadLimiter, async (ctx) => {
   const files = await readFiles(ctx, 8);
   const data = [];
-  for (const file of files) data.push(await uploadToCloudinary(file, false));
+  for (const file of files) data.push(await uploadFile(file, false));
   return json({ success: true, message: 'Upload successful', data }, 201);
+});
+
+// Direct browser -> Vercel Blob uploads. The file never passes through this
+// function, so Vercel's ~4.5 MB request limit does not apply (videos up to
+// MAX_VIDEO_SIZE). Only signed-in, verified users get an upload token.
+media.post('/blob', async (ctx) => {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) throw new BadRequestError('Direct uploads are not configured');
+  const body = ctx.body as HandleUploadBody;
+  const result = await handleUpload({
+    body,
+    request: ctx.req,
+    onBeforeGenerateToken: async (pathname) => {
+      const user = await resolveUser(ctx);
+      if (!user) throw new UnauthorizedError('Authentication required. Please log in.');
+      if (!user.isEmailVerified) throw new ForbiddenError('Please verify your email address to continue.');
+      if (!pathname.startsWith('azeeora-cosmetics/')) throw new BadRequestError('Invalid upload path');
+      return {
+        allowedContentTypes: [...IMAGE_FORMATS, ...VIDEO_FORMATS],
+        maximumSizeInBytes: MAX_VIDEO_SIZE,
+        addRandomSuffix: true,
+        cacheControlMaxAge: 60 * 60 * 24 * 365,
+      };
+    },
+    onUploadCompleted: async () => {},
+  });
+  return json(result);
 });
 
 media.post('/upload/public', uploadLimiter, async (ctx) => {
   const files = await readFiles(ctx, 5);
   const data = [];
-  for (const file of files) data.push(await uploadToCloudinary(file, true));
+  for (const file of files) data.push(await uploadFile(file, true));
   return json({ success: true, message: 'Upload successful', data }, 201);
 });
 

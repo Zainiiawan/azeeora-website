@@ -47,13 +47,13 @@ export const metadata: Metadata = {
     type: "website",
     url: APP_URL,
     siteName: "AZEEORA COSMETICS",
-    images: [{ url: "/logo.png", width: 512, height: 512, alt: "AZEEORA COSMETICS" }],
+    images: [{ url: "/brand/og.png", width: 1200, height: 630, alt: "AZEEORA COSMETICS" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "AZEEORA COSMETICS | Luxury Beauty Products",
     description: "Discover premium luxury cosmetics curated for the modern woman.",
-    images: ["/logo.png"],
+    images: ["/brand/og.png"],
   },
   verification: {
     google: "hJhcaTPMOXI5_KbIDYvh6rf99bjD9SSs-CrFGEcwtAo",

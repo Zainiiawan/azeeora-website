@@ -107,7 +107,7 @@ const Footer = ({ className }: { className?: string }) => {
 
       {/* Wordmark across the foot of every page */}
       <div className="px-4 sm:px-8 lg:px-10 pt-6 pb-4 border-t border-line flex justify-center overflow-hidden">
-        <Wordmark className="text-[14.5vw] lg:text-[12vw] text-ink" showSubline={false} opsz={96} />
+        <Wordmark className="text-[14vw] lg:text-[10vw]" showSubline={false} />
       </div>
 
       <div className="px-5 sm:px-8 lg:px-10 py-5 border-t border-line flex flex-col md:flex-row justify-between items-center gap-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">

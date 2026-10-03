@@ -119,7 +119,7 @@ const Header = () => {
               isHome && !scrolled && !menuOpen && !searchOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
             )}
           >
-            <Wordmark className="text-[19px] lg:text-[23px]" opsz={14} />
+            <Wordmark className="text-[19px] lg:text-[25px]" showSubline={false} priority />
           </Link>
 
           <div className={cn('flex items-center justify-end gap-5 lg:gap-7', ink)}>
@@ -211,7 +211,7 @@ const Header = () => {
               aria-label="Menu"
             >
               <div className="h-[92px] lg:h-[104px] px-6 sm:px-10 flex items-end pb-5 justify-between border-b border-line">
-                <Wordmark className="text-[19px]" opsz={14} />
+                <Wordmark className="text-[20px]" showSubline={false} />
                 <button onClick={() => setMenuOpen(false)} className="caps flex items-center gap-2" aria-label="Close menu">
                   Close <X className="w-4 h-4" strokeWidth={1.2} />
                 </button>

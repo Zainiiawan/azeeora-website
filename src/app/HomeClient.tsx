@@ -67,7 +67,7 @@ export default function HomeClient({
       {/* ── Wordmark opening ────────────────────────────────── */}
       <section className="px-3 sm:px-6 pt-8 lg:pt-12 pb-10 lg:pb-14 flex justify-center overflow-hidden">
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.4, ease }}>
-          <Wordmark className="text-[15vw] lg:text-[12.5vw] text-ink" opsz={96} subline="Cosmetics · Pakistan" sublineSize="max(0.075em, 9px)" />
+          <Wordmark className="text-[14vw] lg:text-[10.5vw]" subline="Cosmetics · Pakistan" sublineSize="max(0.08em, 9px)" priority />
         </motion.div>
       </section>
 

@@ -92,7 +92,7 @@ export function publicUser<T extends Doc | null | undefined>(user: T): T {
 // ---------------------------------------------------------------------------
 // Auth middleware
 // ---------------------------------------------------------------------------
-async function resolveUser(ctx: Ctx): Promise<AuthUser | undefined> {
+export async function resolveUser(ctx: Ctx): Promise<AuthUser | undefined> {
   const header = ctx.req.headers.get('authorization') || '';
   const match = header.match(/^Bearer\s+(.+)$/i);
   if (!match) return undefined;
