@@ -1,43 +1,55 @@
 @import "tailwindcss";
 
-:root {
-  /* MAISON AYEZA — ivory, espresso and champagne.
-     Token names are kept (rose-gold*) so every existing page re-skins at once. */
-  --background: #f7f3ee;          /* warm ivory */
-  --foreground: #1c1714;          /* espresso */
-  --rose-gold: #a8875a;           /* champagne gold (signature accent) */
-  --rose-gold-light: #e9dccb;     /* pale champagne */
-  --rose-gold-dark: #6f5636;      /* deep bronze, AA on ivory */
-  --blush: #ead7d1;               /* Flora blush, used for glass tints */
-  --black: #1c1714;
-  --white: #ffffff;
-  --gray-50: #faf7f3;
-  --gray-100: #f1ebe3;
-  --gray-200: #e4dbd0;
-  --gray-300: #cfc3b5;
-  --gray-400: #a89b8c;
-  --gray-500: #7d7064;
-  --gray-600: #5e534a;
-  --gray-700: #463d36;
-  --gray-800: #2e2722;
-  --gray-900: #1c1714;
-  --input-bg: #fffdfa;
-  --input-text: #1c1714;
-  --input-placeholder: #8a7d70;
-  --input-border: #d9cdbf;
-  --input-border-focus: #a8875a;
+/*
+  AYEZA design system.
+  Modelled on how the fashion-house beauty sites actually look: a white canvas,
+  near-black type, one warm grey for product tiles, hairline rules, and the
+  photography carrying all of the colour. No gradients, no glows, no tints.
 
-  /* Glass */
-  --glass-bg: rgba(255, 252, 248, 0.55);
-  --glass-bg-strong: rgba(255, 252, 248, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.65);
-  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 20px 50px -20px rgba(60, 40, 20, 0.25);
+  The old token names (rose-gold*) are kept so every legacy page that uses
+  them turns monochrome automatically.
+*/
+:root {
+  --background: #ffffff;
+  --foreground: #111111;
+  --ink: #111111;
+  --muted: #6e6e6e;
+  --line: #e6e6e6;
+  --tile: #f3f2ef;              /* product tile / quiet surface */
+
+  --rose-gold: #111111;         /* "accent" is ink */
+  --rose-gold-light: #f3f2ef;
+  --rose-gold-dark: #000000;
+  --black: #111111;
+  --white: #ffffff;
+
+  --gray-50: #fafafa;
+  --gray-100: #f3f2ef;
+  --gray-200: #e6e6e6;
+  --gray-300: #d0d0d0;
+  --gray-400: #a3a3a3;
+  --gray-500: #6e6e6e;
+  --gray-600: #555555;
+  --gray-700: #3d3d3d;
+  --gray-800: #262626;
+  --gray-900: #111111;
+
+  --input-bg: #ffffff;
+  --input-text: #111111;
+  --input-placeholder: #8a8a8a;
+  --input-border: #d0d0d0;
+  --input-border-focus: #111111;
+
   --ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-tile: var(--tile);
   --color-rose-gold: var(--rose-gold);
   --color-rose-gold-light: var(--rose-gold-light);
   --color-rose-gold-dark: var(--rose-gold-dark);
@@ -54,20 +66,14 @@
   --color-gray-800: var(--gray-800);
   --color-gray-900: var(--gray-900);
 
-  /* Luxury Typography */
   --font-serif: var(--font-display), "Bodoni Moda", Didot, Georgia, serif;
-  --font-sans: var(--font-body), "Jost", "Helvetica Neue", system-ui, sans-serif;
-  --color-blush: var(--blush);
+  --font-sans: var(--font-body), "Jost", "Helvetica Neue", Arial, sans-serif;
 }
 
-/*
-  Storefront is light-themed. Do NOT flip --foreground to white under
-  prefers-color-scheme: dark — that made typed text / icons invisible on
-  white cards and inputs.
-*/
+/* Storefront is light only. Do not flip colours for prefers-color-scheme. */
 html {
   color-scheme: light;
-  background-color: #1c1714;
+  background-color: #ffffff;
 }
 
 body {
@@ -80,181 +86,143 @@ body {
   min-height: 100vh;
 }
 
-/* Strictly lock overscroll rubber-banding on mobile devices (iOS/Android) 
-   to prevent the white gap under the footer. We use max-width: 767px so 
-   that laptops and tablets (which have snap-scrolling enabled) are unaffected 
-   and users don't get trapped at the bottom. */
+/* Lock overscroll rubber-banding on phones (prevents a gap under the footer) */
 @media (max-width: 767px) {
   html, body {
     overscroll-behavior-y: none;
   }
 }
 
-/* Luxury Design System ---------------------------------------------------- */
 @layer base {
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-serif);
+    font-family: var(--font-sans);
     font-weight: 400;
-    letter-spacing: -0.01em;
-    line-height: 1.08;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
     color: var(--foreground);
   }
-
   body {
     font-weight: 300;
-    letter-spacing: 0.01em;
   }
 }
 
 ::selection {
-  background: var(--rose-gold-light);
-  color: var(--foreground);
+  background: #111111;
+  color: #ffffff;
 }
 
 @layer components {
-/* Small spaced capitals used for labels, nav and eyebrows */
-.eyebrow {
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-}
+  /* Small capitals: nav, labels, buttons. Modest tracking, like the houses use. */
+  .caps {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .caps-sm {
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  /* Uppercase titles set in the sans */
+  .title {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.05;
+  }
+  /* Editorial serif, used sparingly */
+  .editorial {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.005em;
+    line-height: 1.1;
+  }
 
-.display {
-  font-family: var(--font-serif);
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 0.98;
-}
+  .btn-ink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 3rem;
+    padding: 0 2rem;
+    background: #111111;
+    color: #ffffff;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
+  }
+  .btn-ink:hover { background: #333333; }
+  .btn-ink:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.hairline {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(168, 135, 90, 0.55), transparent);
-}
+  .btn-line {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 3rem;
+    padding: 0 2rem;
+    border: 1px solid #111111;
+    color: #111111;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  .btn-line:hover { background: #111111; color: #ffffff; }
+  .btn-line:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Signature frosted glass */
-.glass {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
-  backdrop-filter: blur(22px) saturate(160%);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-}
+  /* Text link with an underline that draws in */
+  .u-link {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 100% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    padding-bottom: 2px;
+    transition: background-size 0.45s var(--ease-lux);
+  }
+  .u-link:hover { background-size: 0% 1px; background-position: 100% 100%; }
+  .u-hover {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    padding-bottom: 2px;
+    transition: background-size 0.45s var(--ease-lux);
+  }
+  .u-hover:hover { background-size: 100% 1px; }
 
-.glass-strong {
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: blur(28px) saturate(170%);
-  backdrop-filter: blur(28px) saturate(170%);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-}
+  /* The one place we use translucency: the header over imagery and small overlays */
+  .frost {
+    background: rgba(255, 255, 255, 0.82);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+  }
 
-.glass-dark {
-  background: rgba(28, 23, 20, 0.38);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #fff;
-}
-
-/* A slow light sweep across glass on hover */
-.glass-sheen {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.glass-sheen::after {
-  content: '';
-  position: absolute;
-  inset: -40%;
-  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
-  transform: translateX(-60%);
-  transition: transform 1.2s var(--ease-lux);
-  pointer-events: none;
-  z-index: 1;
-}
-.glass-sheen:hover::after {
-  transform: translateX(60%);
-}
-
-/* Soft ambient background for glass to sit on */
-.maison-backdrop {
-  background:
-    radial-gradient(60% 50% at 15% 10%, rgba(234, 215, 209, 0.75), transparent 70%),
-    radial-gradient(50% 45% at 90% 20%, rgba(233, 220, 203, 0.8), transparent 70%),
-    radial-gradient(70% 60% at 50% 100%, rgba(240, 232, 222, 0.9), transparent 70%),
-    var(--background);
-}
-
-.btn-lux {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 1rem 2.25rem;
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  transition: all 0.5s var(--ease-lux);
-}
-
-.link-underline {
-  background-image: linear-gradient(currentColor, currentColor);
-  background-size: 0% 1px;
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  transition: background-size 0.5s var(--ease-lux);
-}
-.link-underline:hover {
-  background-size: 100% 1px;
-}
-}
-
-/* Back-compat helpers used across older pages */
-.rose-gold-gradient {
-  background: linear-gradient(135deg, var(--rose-gold-dark) 0%, var(--rose-gold) 100%);
-}
-
-.luxury-shadow {
-  box-shadow: 0 18px 40px -22px rgba(60, 40, 20, 0.35);
-}
-
-.luxury-border {
-  border: 1px solid rgba(168, 135, 90, 0.35);
-  box-shadow: 0 18px 40px -22px rgba(60, 40, 20, 0.3);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+  .reveal-img {
+    transition: transform 1.4s var(--ease-lux), opacity 0.6s ease;
   }
 }
 
-/* High-contrast form controls site-wide */
+/* Form controls: crisp, square, high contrast */
 input:not([type='checkbox']):not([type='radio']):not([type='file']):not([type='range']):not([type='hidden']):not([type='submit']):not([type='button']):not([type='reset']),
 textarea,
 select {
   background-color: var(--input-bg) !important;
   color: var(--input-text) !important;
-  caret-color: var(--rose-gold);
+  caret-color: #111111;
   border-color: var(--input-border);
 }
-
 input::placeholder,
 textarea::placeholder {
   color: var(--input-placeholder) !important;
   opacity: 1;
 }
-
-input::-webkit-input-placeholder,
-textarea::-webkit-input-placeholder {
-  color: var(--input-placeholder) !important;
-}
-
-/* Keep Chrome autofill readable on light fields */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -264,103 +232,74 @@ select:-webkit-autofill {
   -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
   box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
   transition: background-color 99999s ease-out;
-  caret-color: var(--rose-gold);
+}
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  accent-color: #111111;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 999px; }
 
-::-webkit-scrollbar-track {
-  background: var(--gray-100);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--gray-300);
-  border-radius: 999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--rose-gold-dark);
-}
-
-/* Focus States */
 :focus-visible {
-  outline: 2px solid var(--rose-gold);
-  outline-offset: 2px;
+  outline: 1px solid #111111;
+  outline-offset: 3px;
 }
 
-/* Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.8s var(--ease-lux) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.9s var(--ease-lux);
-}
-
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.animate-marquee {
-  animation: marquee 38s linear infinite;
-}
-
-@keyframes slowZoom {
-  from { transform: scale(1.08); }
-  to { transform: scale(1); }
-}
-.animate-slow-zoom {
-  animation: slowZoom 2.8s var(--ease-lux) both;
-}
-
-/* Storefront-wide refinements (admin is outside .maison and keeps its look) */
+/*
+  Storefront-wide normalisation (admin is outside .maison and keeps its look).
+  Unlayered on purpose so it wins over Tailwind utilities on legacy pages.
+*/
+.maison .rounded,
+.maison .rounded-md,
 .maison .rounded-lg,
 .maison .rounded-xl,
 .maison .rounded-2xl,
-.maison .rounded-3xl,
-.maison .rounded-md {
-  border-radius: 2px;
-}
-.maison .bg-white {
-  background-color: #fffdfa;
+.maison .rounded-3xl {
+  border-radius: 0;
 }
 .maison .shadow-sm,
 .maison .shadow,
 .maison .shadow-md,
 .maison .shadow-lg,
-.maison .shadow-xl {
-  box-shadow: 0 18px 40px -26px rgba(60, 40, 20, 0.28);
+.maison .shadow-xl,
+.maison .shadow-2xl {
+  box-shadow: none;
 }
+.maison .bg-gray-50 { background-color: #ffffff; }
 .maison .border-gray-100,
-.maison .border-gray-200 {
-  border-color: rgba(28, 23, 20, 0.08);
+.maison .border-gray-200,
+.maison .border-gray-300 {
+  border-color: var(--line);
 }
 .maison input:not([type='checkbox']):not([type='radio']):not([type='range']),
 .maison select,
 .maison textarea {
   border-radius: 0;
 }
-.maison input[type='checkbox'],
-.maison input[type='radio'] {
-  accent-color: var(--rose-gold-dark);
+/* Older pages set big bold serif headings; bring them in line */
+.maison h1.font-serif, .maison h2.font-serif, .maison h3.font-serif {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
-.maison input[type='range'] {
-  accent-color: var(--rose-gold-dark);
-}
-
-/* Bodoni reads best at regular weight; older pages asked for bold */
-.maison h1.font-bold, .maison h2.font-bold, .maison h3.font-bold,
-.maison h1.font-semibold, .maison h2.font-semibold, .maison h3.font-semibold {
+.maison h4.font-bold, .maison h3.font-bold, .maison h2.font-bold, .maison h1.font-bold,
+.maison h3.font-semibold, .maison h2.font-semibold {
   font-weight: 400;
 }

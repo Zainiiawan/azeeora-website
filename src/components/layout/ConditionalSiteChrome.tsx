@@ -21,7 +21,7 @@ export function ConditionalSiteChrome({ children }: { children: React.ReactNode 
   return (
     <div className="maison bg-[var(--background)] text-[var(--foreground)] min-h-screen flex flex-col w-full">
       <Header />
-      <main className={pathname === '/' ? 'flex-1' : 'flex-1 pt-[104px]'}>{children}</main>
+      <main className="flex-1 pt-[92px] lg:pt-[148px]">{children}</main>
       <Footer />
     </div>
   );

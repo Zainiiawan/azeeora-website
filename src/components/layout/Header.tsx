@@ -1,285 +1,260 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { m as motion, AnimatePresence } from 'framer-motion';
-import { Search, ShoppingBag, Heart, User, Menu, X, LogOut, Shield } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Search, X, Menu } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
 import NotificationBell from '@/components/notifications/NotificationBell';
-import { useSelector, useDispatch } from 'react-redux';
+import Wordmark from '@/components/brand/Wordmark';
 import { RootState, AppDispatch } from '@/store';
 import { logout } from '@/store/slices/authSlice';
-import { cn } from '@/lib/utils';
+import { categoryApi } from '@/lib/api/categoryApi';
+import { cn, displayName } from '@/lib/utils';
 
-const primaryNav = [
-  { name: 'Shop', href: '/shop' },
-  { name: 'Collections', href: '/categories' },
-  { name: 'Offers', href: '/offers' },
+const ease = [0.22, 1, 0.36, 1] as const;
+
+const secondary = [
+  { name: 'Our story', href: '/about' },
   { name: 'Journal', href: '/blog' },
-];
-
-const secondaryNav = [
-  { name: 'Maison', href: '/about' },
-  { name: 'Contact', href: '/contact' },
-  { name: 'Track Order', href: '/track-order' },
+  { name: 'Track an order', href: '/track-order' },
+  { name: 'Client care', href: '/contact' },
   { name: 'Help', href: '/help' },
-];
-
-const announcements = [
-  'Complimentary delivery on orders over PKR 5,000',
-  'Cash on delivery across Pakistan',
-  'Each order hand-finished with signature gift wrapping',
-  'Authentic formulas, crafted in Pakistan',
 ];
 
 const Header = () => {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const cartItemCount = useSelector((state: RootState) => state.cart.items.reduce((sum, item) => sum + item.quantity, 0));
-  const wishlistItemCount = useSelector((state: RootState) => state.wishlist.items.length);
+  const { user, isAuthenticated } = useSelector((s: RootState) => s.auth);
+  const bagCount = useSelector((s: RootState) => s.cart.items.reduce((n, i) => n + i.quantity, 0));
+  const wishCount = useSelector((s: RootState) => s.wishlist.items.length);
 
-  // On the homepage the header floats over the campaign image until you scroll
-  const overHero = pathname === '/' && !scrolled && !isMobileMenuOpen && !isSearchOpen;
+  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: categoryApi.getAll, staleTime: 5 * 60 * 1000 });
+
+  const isHome = pathname === '/';
+  // Over the homepage campaign image the bar is transparent with white type
+  const overImage = false;
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    // on the homepage the giant wordmark opens the page; the header logo appears once it scrolls away
+    const onScroll = () => setScrolled(window.scrollY > (window.innerWidth >= 1024 ? 260 : 120));
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? 'hidden' : 'unset';
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
-  }, [isMobileMenuOpen]);
+  }, [menuOpen]);
 
-  // Close menus after navigating (adjusting state during render, as React recommends)
+  // Close overlays after navigating (state adjusted during render, as React recommends)
   const [lastPath, setLastPath] = useState(pathname);
   if (pathname !== lastPath) {
     setLastPath(pathname);
-    setIsMobileMenuOpen(false);
-    setIsSearchOpen(false);
+    setMenuOpen(false);
+    setSearchOpen(false);
   }
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
+  const signOut = async () => {
     try {
       await dispatch(logout()).unwrap();
-    } catch {
-      // still leave the account area
     } finally {
+      setMenuOpen(false);
       router.push('/');
-      setIsLoggingOut(false);
-      setIsMobileMenuOpen(false);
     }
   };
 
-  const tone = overHero ? 'text-white' : 'text-[#1c1714]';
-  const iconBtn = cn(
-    'relative w-10 h-10 flex items-center justify-center transition-colors duration-500 hover:text-rose-gold shrink-0',
-    tone
-  );
-  const badge =
-    'absolute top-0.5 right-0 min-w-[16px] h-4 px-1 rounded-full bg-rose-gold text-[10px] leading-4 text-white text-center font-medium';
+  const nav = [
+    { name: 'Shop all', href: '/shop' },
+    ...categories.slice(0, 5).map((c) => ({ name: displayName(c.name), href: `/categories/${c.slug}` })),
+    { name: 'Offers', href: '/offers' },
+    { name: 'Journal', href: '/blog' },
+  ];
+
+  const ink = overImage ? 'text-white' : 'text-ink';
 
   return (
-    <header className="fixed top-0 left-0 right-0 w-full z-50">
-      {/* Announcement ribbon */}
-      <div className="h-8 bg-[#1c1714] text-[#e9dccb] overflow-hidden flex items-center">
-        <div className="flex whitespace-nowrap animate-marquee">
-          {[...announcements, ...announcements].map((text, i) => (
-            <span key={i} className="eyebrow !text-[0.6rem] !tracking-[0.3em] px-10 flex items-center gap-10">
-              {text}
-              <span aria-hidden className="text-rose-gold">◆</span>
-            </span>
-          ))}
-        </div>
+    <header className="fixed inset-x-0 top-0 z-50">
+      {/* Service line */}
+      <div className="h-8 bg-tile text-ink flex items-center justify-center px-4">
+        <p className="caps-sm text-center truncate">Complimentary delivery across Pakistan on orders over PKR 5,000</p>
       </div>
 
-      {/* Frosted bar */}
       <div
         className={cn(
-          'transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]',
-          overHero ? 'bg-transparent border-b border-white/15' : 'glass-strong !border-x-0 !border-t-0 !border-b-black/5'
+          'transition-colors duration-500',
+          overImage ? 'bg-transparent' : 'bg-white border-b border-line'
         )}
       >
-        <div className="mx-auto max-w-[1440px] px-4 sm:px-8 h-[72px] grid grid-cols-[1fr_auto_1fr] items-center">
-          {/* Left: nav (desktop) / menu (mobile) */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setIsMobileMenuOpen((v) => !v)}
-              className={cn(iconBtn, 'lg:hidden -ml-2')}
-              aria-label="Menu"
-              aria-expanded={isMobileMenuOpen}
-              aria-controls="mobile-menu"
-            >
-              {isMobileMenuOpen ? <X className="w-5 h-5" strokeWidth={1.25} /> : <Menu className="w-5 h-5" strokeWidth={1.25} />}
+        {/* Main bar */}
+        <div className="h-[60px] lg:h-[72px] px-4 sm:px-6 lg:px-10 grid grid-cols-[1fr_auto_1fr] items-center">
+          <div className={cn('flex items-center gap-5 lg:gap-7', ink)}>
+            <button onClick={() => setMenuOpen(true)} className="flex items-center gap-2.5 caps" aria-label="Open menu">
+              <Menu className="w-[18px] h-[18px]" strokeWidth={1.2} />
+              <span className="hidden lg:inline">Menu</span>
             </button>
-            <nav className="hidden lg:flex items-center gap-9">
-              {primaryNav.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn('eyebrow link-underline pb-1 transition-colors duration-500 hover:text-rose-gold', tone)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
+            <button onClick={() => setSearchOpen((v) => !v)} className="flex items-center gap-2.5 caps" aria-label="Search">
+              <Search className="w-[17px] h-[17px]" strokeWidth={1.2} />
+              <span className="hidden lg:inline">Search</span>
+            </button>
           </div>
 
-          {/* Center: wordmark */}
-          <Link href="/" className={cn('flex flex-col items-center leading-none transition-colors duration-500', tone)}>
-            <span className="font-serif text-[1.65rem] sm:text-[2rem] tracking-[0.42em] pl-[0.42em]">AYEZA</span>
-            <span className="eyebrow !text-[0.5rem] !tracking-[0.55em] pl-[0.55em] mt-1 opacity-80">Cosmetics</span>
+          <Link
+            href="/"
+            aria-label="Ayeza home"
+            className={cn(
+              'transition-all duration-500',
+              ink,
+              // on the homepage the giant hero logo takes this role until you scroll
+              isHome && !scrolled && !menuOpen && !searchOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            )}
+          >
+            <Wordmark className="text-[22px] lg:text-[26px]" opsz={14} />
           </Link>
 
-          {/* Right: actions */}
-          <div className="flex items-center justify-end gap-0.5 sm:gap-1">
-            <nav className="hidden xl:flex items-center gap-8 mr-6">
-              {secondaryNav.slice(0, 2).map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn('eyebrow link-underline pb-1 transition-colors duration-500 hover:text-rose-gold', tone)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-            <button onClick={() => setIsSearchOpen((v) => !v)} className={iconBtn} aria-label="Search">
-              <Search className="w-[18px] h-[18px]" strokeWidth={1.25} />
-            </button>
-            <Link href="/wishlist" className={cn(iconBtn, 'hidden sm:flex')} aria-label="Wishlist">
-              <Heart className="w-[18px] h-[18px]" strokeWidth={1.25} />
-              {wishlistItemCount > 0 && <span className={badge}>{wishlistItemCount > 99 ? '99+' : wishlistItemCount}</span>}
+          <div className={cn('flex items-center justify-end gap-5 lg:gap-7', ink)}>
+            <Link href={isAuthenticated ? '/account' : '/login'} className="hidden lg:inline caps u-hover">
+              {isAuthenticated && user ? user.firstName : 'Sign in'}
             </Link>
-            <div className={cn('hidden lg:flex shrink-0 items-center', tone)}>
-              <NotificationBell />
-            </div>
-            {isAuthenticated && user ? (
-              <>
-                {user.role === 'admin' && (
-                  <Link href="/admin" className={cn(iconBtn, 'hidden lg:flex')} aria-label="Admin Panel" title="Admin Panel">
-                    <Shield className="w-[18px] h-[18px]" strokeWidth={1.25} />
-                  </Link>
-                )}
-                <Link href="/account" className={cn(iconBtn, 'hidden lg:flex')} aria-label="My account" title={user.firstName}>
-                  <User className="w-[18px] h-[18px]" strokeWidth={1.25} />
-                </Link>
-              </>
-            ) : (
-              <Link href="/login" className={cn(iconBtn, 'hidden lg:flex')} aria-label="Sign in">
-                <User className="w-[18px] h-[18px]" strokeWidth={1.25} />
+            {isAuthenticated && user?.role === 'admin' && (
+              <Link href="/admin" className="hidden lg:inline caps u-hover">
+                Admin
               </Link>
             )}
-            <Link href="/cart" className={iconBtn} aria-label="Shopping bag">
-              <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.25} />
-              {cartItemCount > 0 && <span className={badge}>{cartItemCount > 99 ? '99+' : cartItemCount}</span>}
+            <Link href="/wishlist" className="hidden lg:inline caps u-hover">
+              Wishlist{wishCount > 0 ? ` (${wishCount})` : ''}
+            </Link>
+            {isAuthenticated && (
+              <span className="hidden lg:inline-flex">
+                <NotificationBell />
+              </span>
+            )}
+            <Link href="/cart" className="caps u-hover" aria-label={`Bag, ${bagCount} items`}>
+              Bag ({bagCount})
             </Link>
           </div>
         </div>
 
-        {/* Search drawer */}
-        <AnimatePresence>
-          {isSearchOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="overflow-hidden border-t border-black/5"
-            >
-              <div className="mx-auto max-w-3xl px-4 sm:px-8 py-8">
-                <form action="/shop" method="get" className="relative">
-                  <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" strokeWidth={1.25} />
-                  <input
-                    type="text"
-                    name="search"
-                    placeholder="Search the Maison: serums, fragrances, rituals"
-                    className="w-full pl-9 pr-4 py-3 !bg-transparent border-0 border-b border-black/20 font-serif text-2xl text-[#1c1714] placeholder:text-gray-400 focus:border-rose-gold focus:outline-none focus:ring-0"
-                    autoFocus
-                  />
-                </form>
-              </div>
-            </motion.div>
+        {/* Category row (desktop) */}
+        <nav
+          className={cn(
+            'hidden lg:flex h-11 items-center justify-center gap-10 transition-colors duration-500',
+            overImage ? 'text-white' : 'text-ink'
           )}
-        </AnimatePresence>
+          aria-label="Collections"
+        >
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn('caps u-hover', pathname === item.href && 'u-link')}
+            >
+              {item.name}
+            </Link>
+          ))}
+        </nav>
       </div>
 
-      {/* Mobile menu */}
+      {/* Search panel */}
       <AnimatePresence>
-        {isMobileMenuOpen && (
+        {searchOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.35, ease }}
+            className="bg-white border-b border-line"
+          >
+            <form action="/shop" method="get" className="max-w-3xl mx-auto px-6 py-10 flex items-center gap-4">
+              <Search className="w-5 h-5 text-ink shrink-0" strokeWidth={1.2} />
+              <input
+                name="search"
+                autoFocus
+                placeholder="Search Ayeza"
+                className="flex-1 border-0 border-b border-ink py-3 text-2xl font-light tracking-wide focus:outline-none focus:ring-0"
+              />
+              <button type="button" onClick={() => setSearchOpen(false)} aria-label="Close search">
+                <X className="w-5 h-5" strokeWidth={1.2} />
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Menu drawer */}
+      <AnimatePresence>
+        {menuOpen && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 top-[104px] bg-[#1c1714]/30 backdrop-blur-sm z-40 lg:hidden"
-              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/25 z-40"
+              onClick={() => setMenuOpen(false)}
             />
-            <motion.div
-              id="mobile-menu"
+            <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed left-0 top-[104px] bottom-0 w-[86%] max-w-sm glass-strong z-50 overflow-y-auto overscroll-contain lg:hidden"
+              transition={{ duration: 0.55, ease }}
+              className="fixed inset-y-0 left-0 z-50 w-full sm:w-[440px] bg-white flex flex-col"
+              aria-label="Menu"
             >
-              <nav className="px-8 py-10 flex flex-col">
-                {[...primaryNav, ...secondaryNav].map((item, i) => (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.08 + i * 0.04, duration: 0.5 }}
-                  >
-                    <Link
-                      href={item.href}
-                      className="block py-3 font-serif text-3xl text-[#1c1714] hover:text-rose-gold transition-colors"
+              <div className="h-[92px] lg:h-[104px] px-6 sm:px-10 flex items-end pb-5 justify-between border-b border-line">
+                <Wordmark className="text-[22px]" opsz={14} />
+                <button onClick={() => setMenuOpen(false)} className="caps flex items-center gap-2" aria-label="Close menu">
+                  Close <X className="w-4 h-4" strokeWidth={1.2} />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto px-6 sm:px-10 py-8">
+                <ul className="space-y-1">
+                  {nav.map((item, i) => (
+                    <motion.li
+                      key={item.href}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + i * 0.04, duration: 0.45, ease }}
                     >
-                      {item.name}
-                    </Link>
-                  </motion.div>
-                ))}
-                <div className="hairline my-8" />
-                <Link href="/wishlist" className="eyebrow py-2 text-[#1c1714]">
-                  Wishlist {wishlistItemCount > 0 && `(${wishlistItemCount})`}
-                </Link>
+                      <Link href={item.href} className="block py-2.5 title text-[1.65rem] text-ink hover:text-muted transition-colors">
+                        {item.name}
+                      </Link>
+                    </motion.li>
+                  ))}
+                </ul>
+                <ul className="mt-10 pt-8 border-t border-line space-y-3">
+                  {secondary.map((item) => (
+                    <li key={item.href}>
+                      <Link href={item.href} className="caps text-muted hover:text-ink transition-colors">
+                        {item.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+              <div className="px-6 sm:px-10 py-6 border-t border-line flex items-center justify-between">
                 {isAuthenticated && user ? (
                   <>
-                    <Link href="/account" className="eyebrow py-2 text-[#1c1714]">
-                      My Account · {user.firstName}
-                    </Link>
-                    {user.role === 'admin' && (
-                      <Link href="/admin" className="eyebrow py-2 text-[#1c1714]">
-                        Admin Panel
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => void handleLogout()}
-                      disabled={isLoggingOut}
-                      className="eyebrow py-2 text-left text-gray-500 flex items-center gap-2"
-                    >
-                      <LogOut className="w-3.5 h-3.5" /> {isLoggingOut ? 'Signing out…' : 'Sign out'}
-                    </button>
+                    <Link href="/account" className="caps u-hover">My account</Link>
+                    <button onClick={() => void signOut()} className="caps text-muted hover:text-ink">Sign out</button>
                   </>
                 ) : (
-                  <Link href="/login" className="btn-lux bg-[#1c1714] text-[#f7f3ee] mt-6">
-                    Sign in
-                  </Link>
+                  <>
+                    <Link href="/login" className="caps u-hover">Sign in</Link>
+                    <Link href="/register" className="caps text-muted hover:text-ink">Create account</Link>
+                  </>
                 )}
-              </nav>
-            </motion.div>
+              </div>
+            </motion.aside>
           </>
         )}
       </AnimatePresence>

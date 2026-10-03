@@ -8,8 +8,8 @@ import ScrollToTop from "@/components/layout/ScrollToTop";
 const display = Bodoni_Moda({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
+  axes: ["opsz"],
   display: "swap",
 });
 
@@ -126,7 +126,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col overflow-x-hidden bg-[#1c1714]">
+      <body className="min-h-full flex flex-col overflow-x-hidden bg-white">
         <ScrollToTop />
         <Providers>
           <ConditionalSiteChrome>{children}</ConditionalSiteChrome>

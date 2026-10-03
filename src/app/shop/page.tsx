@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { serverFetch } from '@/lib/serverFetch';
 import { Metadata } from 'next';
 import ShopPageClient from './ShopPageClient';
@@ -51,7 +52,9 @@ export default async function ShopPageServer() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ShopPageClient initialProductsData={initialProductsData} />
+      <Suspense>
+        <ShopPageClient initialProductsData={initialProductsData} />
+      </Suspense>
     </>
   );
 }

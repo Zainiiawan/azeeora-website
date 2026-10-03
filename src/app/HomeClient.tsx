@@ -1,29 +1,29 @@
 'use client';
 
-import { m as motion, useScroll, useTransform } from 'framer-motion';
 import Link from 'next/link';
-import { useRef } from 'react';
+import { m as motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { categoryApi, Category } from '@/lib/api/categoryApi';
 import { Product } from '@/lib/api/productApi';
 import ProductCard from '@/components/products/ProductCard';
-import { displayName, formatPrice, optimizeCloudinaryUrl } from '@/lib/utils';
-import { getEffectivePrice } from '@/lib/productUtils';
+import Wordmark from '@/components/brand/Wordmark';
+import { displayName, optimizeCloudinaryUrl } from '@/lib/utils';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
-const reveal = {
-  initial: { opacity: 0, y: 32 },
+const fadeUp = {
+  initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: '-80px' },
-  transition: { duration: 1.1, ease },
+  viewport: { once: true, margin: '-60px' },
+  transition: { duration: 1, ease },
 };
 
-const promises = [
-  { title: 'Crafted with intention', body: 'Gentle, skin-loving formulas chosen for results you can see and feel.' },
-  { title: 'Never tested on animals', body: 'Every Ayeza formula is cruelty-free, from the first trial to the last bottle.' },
-  { title: 'Delivered to your door', body: 'Complimentary delivery across Pakistan on orders over PKR 5,000.' },
+const services = [
+  { title: 'Complimentary delivery', body: 'On every order over PKR 5,000, anywhere in Pakistan.' },
+  { title: 'Cash on delivery', body: 'Or pay by JazzCash and Easypaisa.' },
+  { title: 'Gift wrapping', body: 'Every order is wrapped by hand.' },
+  { title: 'Client care', body: 'Monday to Saturday, 10am to 8pm.' },
 ];
 
 const faqs = [
@@ -41,7 +41,7 @@ const faqs = [
   },
 ];
 
-const imageOf = (c?: Category, w = 1600) => (c?.image?.url ? optimizeCloudinaryUrl(c.image.url, w) : '');
+const mainImage = (p?: Product) => (p?.images?.find((i) => i.isMain) ?? p?.images?.[0])?.url ?? '';
 
 export default function HomeClient({
   initialCategories,
@@ -58,280 +58,162 @@ export default function HomeClient({
     refetchOnMount: true,
   });
 
-  const heroRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '12%']);
-  const heroFade = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
-
-  const heroProduct = bestsellers.find((p) => p.images?.length);
-  const heroImage = heroProduct
-    ? optimizeCloudinaryUrl((heroProduct.images.find((i) => i.isMain) ?? heroProduct.images[0]).url, 1200)
-    : imageOf(categories.find((c) => c.image?.url), 1200);
-
-  const [lead, ...rest] = categories;
-  const ritual = categories.slice(0, 3);
+  const hero = bestsellers.find((p) => p.images?.length);
+  const editorial = bestsellers.find((p) => p._id !== hero?._id && p.images?.length) ?? hero;
+  const heroSrc = hero ? optimizeCloudinaryUrl(mainImage(hero), 2400) : '';
 
   return (
-    <div className="flex flex-col bg-[var(--background)]">
-      {/* ================= HERO ================= */}
-      <section ref={heroRef} className="relative min-h-[100svh] overflow-hidden bg-[#1c1714] text-white">
-        <div className="absolute -top-40 -left-40 w-[620px] h-[620px] rounded-full bg-rose-gold/25 blur-[140px]" aria-hidden />
-        <div className="absolute bottom-[-200px] right-[-120px] w-[560px] h-[560px] rounded-full bg-[#ead7d1]/15 blur-[130px]" aria-hidden />
-
-        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-10 pt-[136px] pb-16 lg:pb-0 min-h-[100svh] grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          <motion.div style={{ opacity: heroFade }} className="lg:col-span-6 xl:col-span-6 order-2 lg:order-1 text-center lg:text-left">
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, delay: 0.2, ease }}
-              className="eyebrow text-[#e9dccb] mb-8"
-            >
-              Maison Ayeza · Haute Skincare
-            </motion.p>
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.4, delay: 0.35, ease }}
-              className="display !text-[#f7f3ee] text-[3.3rem] sm:text-7xl xl:text-[6.6rem]"
-            >
-              The Art of
-              <br />
-              <em className="italic text-[#e9dccb]">Radiance</em>
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, delay: 0.6, ease }}
-              className="mt-8 max-w-md mx-auto lg:mx-0 text-base sm:text-lg text-white/70 font-light leading-relaxed"
-            >
-              Premium skincare, beauty creams and face washes, composed for luminous, healthy skin. Made for the women of
-              Pakistan.
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, delay: 0.8, ease }}
-              className="mt-12 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
-            >
-              <Link href="/shop" className="btn-lux bg-[#f7f3ee] text-[#1c1714] hover:bg-rose-gold hover:text-white">
-                Discover the collection
-              </Link>
-              <Link href="/categories" className="btn-lux glass-dark hover:bg-white/15">
-                Explore rituals
-              </Link>
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            style={{ y: heroY }}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.6, delay: 0.2, ease }}
-            className="lg:col-span-6 order-1 lg:order-2 relative mx-auto w-full max-w-[300px] sm:max-w-[400px] xl:max-w-[460px]"
-          >
-            {/* Arched frame */}
-            <div className="relative aspect-[3/4] rounded-t-[999px] overflow-hidden bg-[#2a221d] ring-1 ring-white/10">
-              {heroImage ? (
-                <img src={heroImage} alt={heroProduct?.name ?? ''} className="w-full h-full object-cover animate-slow-zoom" fetchPriority="high" />
-              ) : (
-                <div className="w-full h-full maison-backdrop" />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1c1714]/50 via-transparent to-transparent" />
-            </div>
-            {/* thin outline arch offset behind */}
-            <div className="absolute -inset-4 sm:-inset-6 rounded-t-[999px] border border-[#e9dccb]/25 -z-10" aria-hidden />
-
-            {heroProduct && (
-              <Link
-                href={`/products/${heroProduct.slug}`}
-                className="absolute -bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:-right-10 w-[88%] sm:w-auto sm:min-w-[260px] glass-dark glass-sheen px-6 py-5 group"
-              >
-                <p className="eyebrow !text-[0.55rem] text-[#e9dccb] mb-1.5">The icon</p>
-                <p className="font-serif text-xl text-white">{heroProduct.name}</p>
-                <p className="mt-1 text-xs tracking-[0.14em] text-white/70 flex items-center gap-2">
-                  {formatPrice(getEffectivePrice(heroProduct))}
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-500 group-hover:translate-x-1" strokeWidth={1.25} />
-                </p>
-              </Link>
-            )}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ================= MANIFESTO ================= */}
-      <section className="py-28 sm:py-40 px-6">
-        <motion.div {...reveal} className="max-w-4xl mx-auto text-center">
-          <p className="eyebrow text-rose-gold-dark mb-10">The Maison</p>
-          <h2 className="display text-[2.2rem] sm:text-5xl lg:text-6xl text-[#1c1714]">
-            Beauty is not added. It is <em className="italic text-rose-gold-dark">revealed</em>, one quiet ritual at a time.
-          </h2>
-          <div className="hairline w-40 mx-auto mt-14" />
+    <div className="bg-white">
+      {/* ── Wordmark opening ────────────────────────────────── */}
+      <section className="px-3 sm:px-6 pt-8 lg:pt-12 pb-10 lg:pb-14 flex justify-center overflow-hidden">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.4, ease }}>
+          <Wordmark className="text-[22vw] lg:text-[17.5vw] text-ink" opsz={96} subline="Cosmetics · Pakistan" sublineSize="max(0.055em, 9px)" />
         </motion.div>
       </section>
 
-      {/* ================= COLLECTIONS ================= */}
-      {categories.length > 0 && (
-        <section className="px-4 sm:px-8 pb-28 sm:pb-36">
-          <div className="max-w-[1440px] mx-auto">
-            <motion.div {...reveal} className="flex items-end justify-between mb-12 sm:mb-16 gap-6">
-              <div>
-                <p className="eyebrow text-rose-gold-dark mb-4">Collections</p>
-                <h2 className="display text-4xl sm:text-6xl text-[#1c1714]">Shop by ritual</h2>
-              </div>
-              <Link href="/categories" className="hidden sm:inline-flex eyebrow link-underline pb-1 text-[#1c1714] items-center gap-2">
-                All collections <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.25} />
-              </Link>
-            </motion.div>
-
-            {categories.length < 3 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                {categories.map((c) => (
-                  <CategoryTile key={c._id} category={c} className="aspect-[4/5]" large />
-                ))}
-              </div>
-            ) : (
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6">
-              {lead && (
-                <CategoryTile category={lead} className="md:col-span-7 md:row-span-2 aspect-[4/5] md:aspect-auto md:min-h-[760px]" large />
-              )}
-              {rest.slice(0, 2).map((c) => (
-                <CategoryTile key={c._id} category={c} className="md:col-span-5 aspect-[4/3] md:aspect-auto md:min-h-[368px]" />
-              ))}
-              {rest.slice(2).map((c) => (
-                <CategoryTile key={c._id} category={c} className="md:col-span-4 aspect-[4/5]" />
-              ))}
-            </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ================= BESTSELLERS ================= */}
-      {bestsellers.length > 0 && (
-        <section className="maison-backdrop py-28 sm:py-36 px-4 sm:px-8">
-          <div className="max-w-[1440px] mx-auto">
-            <motion.div {...reveal} className="text-center mb-16">
-              <p className="eyebrow text-rose-gold-dark mb-4">Most coveted</p>
-              <h2 className="display text-4xl sm:text-6xl text-[#1c1714]">The icons</h2>
-            </motion.div>
-            <div className="flex flex-wrap justify-center gap-x-4 sm:gap-x-6 gap-y-12">
-              {bestsellers.slice(0, 8).map((p, i) => (
-                <ProductCard
-                  key={p._id}
-                  product={p}
-                  priority={i < 4}
-                  className="w-[calc(50%-0.5rem)] sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] max-w-[420px]"
-                />
-              ))}
-            </div>
-            <div className="text-center mt-16">
-              <Link href="/shop" className="btn-lux border border-[#1c1714] text-[#1c1714] hover:bg-[#1c1714] hover:text-[#f7f3ee]">
-                View all products
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ================= THE RITUAL ================= */}
-      {ritual.length > 0 && (
-        <section className="py-28 sm:py-40 px-4 sm:px-8">
-          <div className="max-w-[1440px] mx-auto grid lg:grid-cols-2 gap-12 lg:gap-24 items-center">
-            <motion.div {...reveal} className="relative aspect-[4/5] overflow-hidden bg-[#efe7dc]">
-              {imageOf(ritual[ritual.length - 1] ?? ritual[0], 1400) && (
-                <img
-                  src={imageOf(ritual[ritual.length - 1] ?? ritual[0], 1400)}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              )}
-              <div className="absolute left-6 right-6 bottom-6 glass p-6 sm:p-8">
-                <p className="eyebrow text-rose-gold-dark mb-2">The Ayeza ritual</p>
-                <p className="font-serif text-2xl sm:text-3xl text-[#1c1714]">A quiet ritual for a luminous complexion.</p>
-              </div>
-            </motion.div>
-
+      {/* ── Campaign ─────────────────────────────────────────── */}
+      {hero && (
+        <section>
+          <Link href={`/products/${hero.slug}`} className="block relative aspect-[4/5] sm:aspect-[16/9] lg:aspect-[21/9] overflow-hidden bg-tile">
+            <motion.img
+              src={heroSrc}
+              alt={hero.name}
+              fetchPriority="high"
+              initial={{ scale: 1.05, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 1.8, delay: 0.2, ease }}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </Link>
+          <div className="px-5 sm:px-8 lg:px-10 pt-6 flex flex-col sm:flex-row sm:items-end justify-between gap-5">
             <div>
-              <motion.p {...reveal} className="eyebrow text-rose-gold-dark mb-6">
-                Daily ritual
-              </motion.p>
-              <motion.h2 {...reveal} className="display text-4xl sm:text-6xl text-[#1c1714] mb-14">
-                Cleanse, treat, <em className="italic">glow</em>.
-              </motion.h2>
-              <ol className="space-y-0">
-                {ritual.map((c, i) => (
-                  <motion.li key={c._id} {...reveal} transition={{ ...reveal.transition, delay: i * 0.12 }}>
-                    <Link
-                      href={`/categories/${c.slug}`}
-                      className="group flex items-baseline gap-6 sm:gap-10 py-8 border-t border-black/10 last:border-b"
-                    >
-                      <span className="font-serif italic text-rose-gold text-2xl w-10">0{i + 1}</span>
-                      <span className="flex-1">
-                        <span className="block font-serif text-2xl sm:text-3xl text-[#1c1714] transition-colors duration-500 group-hover:text-rose-gold-dark">
-                          {displayName(c.name)}
-                        </span>
-                        {c.description && (
-                          <span className="block mt-2 text-sm text-gray-500 line-clamp-2 max-w-md">{c.description}</span>
-                        )}
-                      </span>
-                      <ArrowRight
-                        className="w-4 h-4 text-[#1c1714] transition-transform duration-500 group-hover:translate-x-2"
-                        strokeWidth={1.25}
-                      />
-                    </Link>
-                  </motion.li>
-                ))}
-              </ol>
+              <p className="caps text-muted mb-2">The signature</p>
+              <h1 className="title text-2xl sm:text-4xl text-ink">{hero.name}</h1>
+            </div>
+            <div className="flex gap-8 pb-1">
+              <Link href={`/products/${hero.slug}`} className="caps u-link">
+                Discover
+              </Link>
+              <Link href="/shop" className="caps u-link">
+                Shop all
+              </Link>
             </div>
           </div>
         </section>
       )}
 
-      {/* ================= PROMISES ================= */}
-      <section className="relative overflow-hidden bg-[#1c1714] py-28 sm:py-36 px-4 sm:px-8">
-        <div className="absolute -top-40 -left-40 w-[520px] h-[520px] rounded-full bg-rose-gold/25 blur-[120px]" aria-hidden />
-        <div className="absolute -bottom-40 -right-20 w-[480px] h-[480px] rounded-full bg-[#ead7d1]/20 blur-[120px]" aria-hidden />
-        <div className="relative max-w-[1240px] mx-auto">
-          <motion.div {...reveal} className="text-center mb-16">
-            <p className="eyebrow text-[#e9dccb] mb-4">Our promise</p>
-            <h2 className="display !text-[#f7f3ee] text-4xl sm:text-6xl">Why Ayeza</h2>
-          </motion.div>
-          <div className="grid md:grid-cols-3 gap-5">
-            {promises.map((p, i) => (
-              <motion.div
-                key={p.title}
-                {...reveal}
-                transition={{ ...reveal.transition, delay: i * 0.12 }}
-                className="glass-dark glass-sheen p-10 text-center"
-              >
-                <span className="font-serif italic text-rose-gold text-3xl">0{i + 1}</span>
-                <h3 className="font-serif !text-[#f7f3ee] text-2xl mt-6 mb-4">{p.title}</h3>
-                <p className="text-white/65 text-sm leading-relaxed">{p.body}</p>
+      {/* ── Introduction ─────────────────────────────────────── */}
+      <section className="px-6 py-24 lg:py-36">
+        <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
+          <p className="caps text-muted mb-8">Ayeza · Pakistan</p>
+          <p className="editorial text-[1.9rem] sm:text-[2.6rem] text-ink">
+            Considered skincare, made to be used every day and kept for the way it makes you feel.
+          </p>
+        </motion.div>
+      </section>
+
+      {/* ── Collections ──────────────────────────────────────── */}
+      {categories.length > 0 && (
+        <section className="px-2 sm:px-3">
+          <div className={`grid gap-2 sm:gap-3 ${categories.length >= 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+            {categories.slice(0, 3).map((c, i) => (
+              <motion.div key={c._id} {...fadeUp} transition={{ ...fadeUp.transition, delay: i * 0.1 }}>
+                <Link href={`/categories/${c.slug}`} className="group relative block aspect-[4/5] overflow-hidden bg-tile">
+                  {c.image?.url && (
+                    <img
+                      src={optimizeCloudinaryUrl(c.image.url, 1400)}
+                      alt={displayName(c.name)}
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover reveal-img group-hover:scale-[1.03]"
+                    />
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/45 to-transparent" />
+                  <div className="absolute left-5 bottom-5 sm:left-7 sm:bottom-7 text-white">
+                    <h2 className="title !text-white text-2xl sm:text-3xl">{displayName(c.name)}</h2>
+                    <span className="caps u-link mt-3 inline-block">Discover</span>
+                  </div>
+                </Link>
               </motion.div>
             ))}
           </div>
+        </section>
+      )}
+
+      {/* ── Bestsellers ──────────────────────────────────────── */}
+      {bestsellers.length > 0 && (
+        <section className="pt-24 lg:pt-32">
+          <div className="px-5 sm:px-8 lg:px-10 flex items-end justify-between mb-8">
+            <h2 className="title text-2xl sm:text-3xl text-ink">Bestsellers</h2>
+            <Link href="/shop" className="caps u-hover">
+              View all
+            </Link>
+          </div>
+          <div
+            className={`grid grid-cols-2 gap-x-2 sm:gap-x-3 px-2 sm:px-3 ${
+              bestsellers.length >= 4 ? 'lg:grid-cols-4' : bestsellers.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-2'
+            }`}
+          >
+            {bestsellers.slice(0, 8).map((p, i) => (
+              <ProductCard key={p._id} product={p} priority={i < 2} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── Editorial ────────────────────────────────────────── */}
+      {editorial && (
+        <section className="mt-20 lg:mt-28 grid lg:grid-cols-2 border-y border-line">
+          <div className="relative aspect-square lg:aspect-auto lg:min-h-[720px] bg-tile overflow-hidden">
+            <img
+              src={optimizeCloudinaryUrl(mainImage(editorial), 1600)}
+              alt={editorial.name}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
+          <motion.div {...fadeUp} className="flex flex-col justify-center px-6 sm:px-12 lg:px-20 py-16 lg:py-0">
+            <p className="caps text-muted mb-6">The ritual</p>
+            <h2 className="editorial text-[2.2rem] sm:text-5xl text-ink max-w-md">Cleanse in the morning. Restore by night.</h2>
+            <p className="mt-6 text-gray-600 leading-relaxed max-w-md">
+              Two steps, chosen with care. {editorial.name} is formulated for skin that looks rested, even and quietly
+              luminous.
+            </p>
+            <div className="mt-10 flex flex-wrap gap-4">
+              <Link href={`/products/${editorial.slug}`} className="btn-ink">
+                Discover
+              </Link>
+              <Link href="/categories" className="btn-line">
+                All collections
+              </Link>
+            </div>
+          </motion.div>
+        </section>
+      )}
+
+      {/* ── Services ─────────────────────────────────────────── */}
+      <section className="bg-tile mt-20 lg:mt-28">
+        <div className="px-5 sm:px-8 lg:px-10 py-14 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-10">
+          {services.map((s) => (
+            <div key={s.title}>
+              <p className="caps text-ink mb-2">{s.title}</p>
+              <p className="text-sm text-gray-600 leading-relaxed">{s.body}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ================= FAQ ================= */}
-      <section className="py-28 sm:py-36 px-6">
+      {/* ── Questions ────────────────────────────────────────── */}
+      <section className="px-5 sm:px-8 py-24 lg:py-32">
         <div className="max-w-3xl mx-auto">
-          <motion.div {...reveal} className="text-center mb-14">
-            <p className="eyebrow text-rose-gold-dark mb-4">Questions</p>
-            <h2 className="display text-4xl sm:text-5xl text-[#1c1714]">Frequently asked</h2>
-          </motion.div>
-          <div className="border-t border-black/10">
+          <h2 className="title text-2xl sm:text-3xl text-ink text-center mb-12">Questions</h2>
+          <div className="border-t border-line">
             {faqs.map((f) => (
-              <details key={f.q} className="group border-b border-black/10">
-                <summary className="flex items-center justify-between gap-6 py-7 cursor-pointer list-none">
-                  <h3 className="font-serif text-xl sm:text-2xl text-[#1c1714]">{f.q}</h3>
-                  <Plus
-                    className="w-4 h-4 shrink-0 text-rose-gold-dark transition-transform duration-500 group-open:rotate-45"
-                    strokeWidth={1.25}
-                  />
+              <details key={f.q} className="group border-b border-line">
+                <summary className="flex items-center justify-between gap-6 py-6 cursor-pointer list-none">
+                  <h3 className="text-[0.95rem] text-ink font-normal tracking-wide">{f.q}</h3>
+                  <Plus className="w-4 h-4 shrink-0 transition-transform duration-300 group-open:rotate-45" strokeWidth={1.2} />
                 </summary>
-                <p className="pb-8 -mt-2 text-gray-600 leading-relaxed max-w-2xl">{f.a}</p>
+                <p className="pb-6 -mt-1 text-gray-600 leading-relaxed text-[0.95rem]">{f.a}</p>
               </details>
             ))}
           </div>
@@ -343,50 +225,11 @@ export default function HomeClient({
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'FAQPage',
-              mainEntity: faqs.map((f) => ({
-                '@type': 'Question',
-                name: f.q,
-                acceptedAnswer: { '@type': 'Answer', text: f.a },
-              })),
+              mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
             }),
           }}
         />
       </section>
     </div>
-  );
-}
-
-function CategoryTile({ category, className, large }: { category: Category; className?: string; large?: boolean }) {
-  const src = imageOf(category, large ? 1600 : 1000);
-  return (
-    <motion.div {...reveal} className={`relative overflow-hidden group bg-[#efe7dc] ${className ?? ''}`}>
-      <Link href={`/categories/${category.slug}`} className="absolute inset-0">
-        {src ? (
-          <img
-            src={src}
-            alt={displayName(category.name)}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-[1800ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05]"
-            loading="lazy"
-          />
-        ) : (
-          <div className="absolute inset-0 maison-backdrop" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1714]/45 via-transparent to-transparent" />
-        <div className="absolute left-4 right-4 bottom-4 sm:left-6 sm:right-auto sm:bottom-6 glass glass-sheen px-6 py-5 sm:min-w-[280px]">
-          <p className="eyebrow !text-[0.6rem] text-rose-gold-dark mb-1">
-            {typeof category.productCount === 'number' && category.productCount > 0
-              ? `${category.productCount} creations`
-              : 'Collection'}
-          </p>
-          <div className="flex items-center justify-between gap-6">
-            <h3 className={`font-serif text-[#1c1714] ${large ? 'text-3xl sm:text-4xl' : 'text-2xl'}`}>{displayName(category.name)}</h3>
-            <ArrowRight
-              className="w-4 h-4 text-[#1c1714] transition-transform duration-500 group-hover:translate-x-1.5"
-              strokeWidth={1.25}
-            />
-          </div>
-        </div>
-      </Link>
-    </motion.div>
   );
 }

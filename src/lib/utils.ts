@@ -47,8 +47,8 @@ export function optimizeCloudinaryUrl(url: string, width = 800, square = false):
     // f_auto: automatic format (WebP/AVIF)
     // q_auto: automatic quality
     // w_<width>: limit width to save bandwidth
-    // c_pad,b_rgb:f4efe8,ar_4:5: pad packshots onto the ivory card colour in a 4:5 frame
-    const crop = square ? ',c_pad,b_rgb:f4efe8,ar_4:5' : '';
+    // c_fill,g_auto,ar_3:4: crop to the 3:4 tile used across the store
+    const crop = square ? ',c_fill,g_auto,ar_3:4' : '';
     return `${parts[0]}/upload/f_auto,q_auto,w_${width}${crop}/${parts[1]}`;
   }
   return url;

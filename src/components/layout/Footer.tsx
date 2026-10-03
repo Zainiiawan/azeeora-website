@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import NewsletterForm from './NewsletterForm';
+import Wordmark from '@/components/brand/Wordmark';
 import { STORE_CONTACT } from '@/shared/constants';
 
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -29,23 +30,14 @@ const columns = [
   {
     title: 'Shop',
     links: [
-      { name: 'All products', href: '/shop' },
-      { name: 'New arrivals', href: '/shop?sort=new' },
-      { name: 'Best sellers', href: '/shop?sort=popular' },
+      { name: 'Shop all', href: '/shop' },
+      { name: 'New in', href: '/shop?sort=new' },
+      { name: 'Collections', href: '/categories' },
       { name: 'Offers', href: '/offers' },
     ],
   },
   {
-    title: 'Collections',
-    links: [
-      { name: 'Skincare', href: '/categories/skincare' },
-      { name: 'Makeup', href: '/categories/makeup' },
-      { name: 'Fragrances', href: '/categories/fragrances' },
-      { name: 'Hair care', href: '/categories/hair-care' },
-    ],
-  },
-  {
-    title: 'The Maison',
+    title: 'Ayeza',
     links: [
       { name: 'Our story', href: '/about' },
       { name: 'Journal', href: '/blog' },
@@ -75,58 +67,28 @@ const Footer = ({ className }: { className?: string }) => {
   const year = new Date().getFullYear();
 
   return (
-    <footer className={`relative overflow-hidden bg-[#1c1714] text-[#f7f3ee] ${className || ''}`}>
-      <div className="absolute -top-48 right-0 w-[560px] h-[560px] rounded-full bg-rose-gold/15 blur-[140px]" aria-hidden />
-
-      {/* Newsletter */}
-      <div className="relative border-b border-white/10">
-        <div className="max-w-[1440px] mx-auto px-6 sm:px-10 py-20 sm:py-24 grid lg:grid-cols-2 gap-10 items-end">
-          <div>
-            <p className="eyebrow text-rose-gold mb-5">The Ayeza letter</p>
-            <h3 className="display !text-[#f7f3ee] text-4xl sm:text-5xl">
-              Private previews, rituals <em className="italic text-[#e9dccb]">& first access</em>.
-            </h3>
-          </div>
-          <div className="lg:justify-self-end w-full lg:max-w-md">
-            <NewsletterForm />
-          </div>
-        </div>
-      </div>
-
-      {/* Links */}
-      <div className="relative max-w-[1440px] mx-auto px-6 sm:px-10 py-16 sm:py-20 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-10">
-        <div className="col-span-2">
-          <Link href="/" className="inline-flex flex-col leading-none">
-            <span className="font-serif text-3xl tracking-[0.42em]">AYEZA</span>
-            <span className="eyebrow !text-[0.5rem] !tracking-[0.55em] mt-2 text-white/60">Cosmetics</span>
-          </Link>
-          <p className="mt-8 text-sm text-white/55 leading-relaxed max-w-xs">
-            Luxury beauty curated for the modern woman. Composed in {STORE_CONTACT.city}, delivered across{' '}
-            {STORE_CONTACT.country}.
-          </p>
-          <div className="flex gap-3 mt-8">
+    <footer className={`bg-tile text-ink ${className || ''}`}>
+      <div className="px-5 sm:px-8 lg:px-10 pt-16 pb-12 grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-12">
+        <div className="col-span-2 lg:col-span-6">
+          <p className="caps mb-3">Stay in the know</p>
+          <p className="text-sm text-gray-600 mb-6 max-w-sm">New launches, rituals and private offers, a few times a season.</p>
+          <NewsletterForm />
+          <div className="flex gap-5 mt-10">
             {socials.map(({ label, href, Icon }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                className="w-10 h-10 rounded-full border border-white/15 flex items-center justify-center text-white/70 hover:text-[#1c1714] hover:bg-[#e9dccb] hover:border-[#e9dccb] transition-all duration-500"
-              >
-                <Icon className="w-4 h-4" />
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="text-ink hover:text-muted transition-colors">
+                <Icon className="w-[18px] h-[18px]" />
               </a>
             ))}
           </div>
         </div>
 
         {columns.map((col) => (
-          <div key={col.title}>
-            <p className="eyebrow !text-[0.6rem] !text-rose-gold mb-6">{col.title}</p>
-            <ul className="space-y-3">
+          <div key={col.title} className="lg:col-span-2 lg:col-start-auto">
+            <p className="caps text-muted mb-5">{col.title}</p>
+            <ul className="space-y-2.5">
               {col.links.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="text-sm text-white/65 hover:text-white transition-colors duration-500 link-underline">
+                  <Link href={link.href} className="caps u-hover">
                     {link.name}
                   </Link>
                 </li>
@@ -136,35 +98,32 @@ const Footer = ({ className }: { className?: string }) => {
         ))}
       </div>
 
-      {/* Contact strip */}
-      <div className="relative max-w-[1440px] mx-auto px-6 sm:px-10 pb-12 flex flex-wrap gap-x-10 gap-y-3 text-xs tracking-wide text-white/50">
+      <div className="px-5 sm:px-8 lg:px-10 pb-8 flex flex-wrap gap-x-8 gap-y-2 caps-sm text-muted">
         <span>{STORE_CONTACT.address}</span>
-        <a href="tel:+923060466911" className="hover:text-white transition-colors">
-          {STORE_CONTACT.phone}
-        </a>
-        <a href={`mailto:${STORE_CONTACT.email}`} className="hover:text-white transition-colors">
-          {STORE_CONTACT.email}
-        </a>
+        <a href="tel:+923060466911" className="hover:text-ink">{STORE_CONTACT.phone}</a>
+        <a href={`mailto:${STORE_CONTACT.email}`} className="hover:text-ink normal-case tracking-normal text-[0.72rem]">{STORE_CONTACT.email}</a>
         <span>{STORE_CONTACT.businessHours}</span>
       </div>
 
-      {/* Legal */}
-      <div className="relative border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
-        <div className="max-w-[1440px] mx-auto px-6 sm:px-10 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="eyebrow !text-[0.55rem] text-white/40">© {year} Ayeza Cosmetics. All rights reserved.</p>
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-            {[
-              ['Privacy', '/privacy'],
-              ['Terms', '/terms'],
-              ['Shipping', '/shipping'],
-              ['Returns', '/refunds'],
-              ['Cookies', '/cookies'],
-            ].map(([name, href]) => (
-              <Link key={href} href={href} className="eyebrow !text-[0.55rem] text-white/40 hover:text-white transition-colors">
-                {name}
-              </Link>
-            ))}
-          </div>
+      {/* Wordmark across the foot of every page */}
+      <div className="px-4 sm:px-8 lg:px-10 pt-6 pb-4 border-t border-line flex justify-center overflow-hidden">
+        <Wordmark className="text-[21vw] lg:text-[17vw] text-ink" showSubline={false} opsz={96} />
+      </div>
+
+      <div className="px-5 sm:px-8 lg:px-10 py-5 border-t border-line flex flex-col md:flex-row justify-between items-center gap-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <p className="caps-sm text-muted">© {year} Ayeza Cosmetics</p>
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+          {[
+            ['Privacy', '/privacy'],
+            ['Terms', '/terms'],
+            ['Shipping', '/shipping'],
+            ['Returns', '/refunds'],
+            ['Cookies', '/cookies'],
+          ].map(([name, href]) => (
+            <Link key={href} href={href} className="caps-sm text-muted hover:text-ink transition-colors">
+              {name}
+            </Link>
+          ))}
         </div>
       </div>
     </footer>

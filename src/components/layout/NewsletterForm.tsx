@@ -7,9 +7,7 @@ import { ArrowRight } from 'lucide-react';
 export default function NewsletterForm() {
   const [done, setDone] = useState(false);
 
-  if (done) {
-    return <p className="font-serif italic text-xl text-[#e9dccb]">Thank you. Welcome to the Maison.</p>;
-  }
+  if (done) return <p className="text-sm text-ink">Thank you. You are on the list.</p>;
 
   return (
     <form
@@ -17,7 +15,7 @@ export default function NewsletterForm() {
         e.preventDefault();
         setDone(true);
       }}
-      className="flex items-center border-b border-white/30 focus-within:border-rose-gold transition-colors max-w-md w-full"
+      className="flex items-center border-b border-ink max-w-md w-full"
     >
       <label htmlFor="newsletter-email" className="sr-only">
         Email address
@@ -26,11 +24,11 @@ export default function NewsletterForm() {
         id="newsletter-email"
         type="email"
         required
-        placeholder="Your email address"
-        className="flex-1 !bg-transparent !text-white placeholder:!text-white/45 border-0 py-4 text-sm tracking-wide focus:outline-none focus:ring-0"
+        placeholder="Email address"
+        className="flex-1 !bg-transparent border-0 px-0 py-3 text-sm focus:outline-none focus:ring-0"
       />
-      <button type="submit" className="eyebrow !text-[0.6rem] text-white hover:text-rose-gold transition-colors flex items-center gap-2 py-4">
-        Subscribe <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.25} />
+      <button type="submit" aria-label="Subscribe" className="p-2 -mr-2">
+        <ArrowRight className="w-4 h-4" strokeWidth={1.2} />
       </button>
     </form>
   );
