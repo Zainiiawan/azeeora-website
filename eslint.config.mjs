@@ -5,6 +5,11 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // Server documents are schemaless JSON rows (as they were with Mongoose)
+    files: ["src/server/**/*.ts"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

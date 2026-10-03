@@ -1,19 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Bodoni_Moda, Jost } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
 import { ConditionalSiteChrome } from "@/components/layout/ConditionalSiteChrome";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 
-const playfair = Playfair_Display({
-  variable: "--font-serif",
+const display = Bodoni_Moda({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-sans",
+const body = Jost({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["300", "400", "500"],
   display: "swap",
 });
 
@@ -112,7 +115,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
@@ -123,7 +126,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
       </head>
-      <body className="min-h-full flex flex-col overflow-x-hidden bg-[#0a0a0a]">
+      <body className="min-h-full flex flex-col overflow-x-hidden bg-[#1c1714]">
         <ScrollToTop />
         <Providers>
           <ConditionalSiteChrome>{children}</ConditionalSiteChrome>

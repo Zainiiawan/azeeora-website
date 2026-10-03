@@ -1,3 +1,4 @@
+import { serverFetch } from '@/lib/serverFetch';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductPageClient from './ProductPageClient';
@@ -6,7 +7,7 @@ import { getEffectivePrice } from '@/lib/productUtils';
 
 async function getProductBySlug(slug: string) {
   try {
-    const res = await fetch(`${config.apiUrl}/products/${slug}`, {
+    const res = await serverFetch(`/products/${slug}`, {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return null;
@@ -20,7 +21,7 @@ async function getProductBySlug(slug: string) {
 
 async function getReviewsByProductId(productId: string) {
   try {
-    const res = await fetch(`${config.apiUrl}/reviews/${productId}`, {
+    const res = await serverFetch(`/reviews/${productId}`, {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
@@ -34,7 +35,7 @@ async function getReviewsByProductId(productId: string) {
 
 async function getStoreSettings() {
   try {
-    const res = await fetch(`${config.apiUrl}/settings`, {
+    const res = await serverFetch(`/settings`, {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return null;

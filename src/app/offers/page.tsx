@@ -1,7 +1,7 @@
+import { serverFetch } from '@/lib/serverFetch';
 import { Metadata } from 'next';
 import ProductCard from '@/components/products/ProductCard';
 import { getEffectivePrice } from '@/lib/productUtils';
-import { config } from '@/lib/config';
 import { Product } from '@/lib/api/productApi';
 
 export const metadata: Metadata = {
@@ -16,7 +16,7 @@ export default async function OffersPage() {
   let products: Product[] = [];
 
   try {
-    const res = await fetch(`${config.apiUrl}/products?limit=100`, {
+    const res = await serverFetch(`/products?limit=100`, {
       next: { tags: ['products'], revalidate: 3600 },
     });
     

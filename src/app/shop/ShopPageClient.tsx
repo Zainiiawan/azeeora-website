@@ -1,5 +1,6 @@
 'use client';
 
+import { displayName } from '@/lib/utils';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { m as motion } from 'framer-motion';
@@ -80,18 +81,19 @@ export default function ShopPage({ initialProductsData }: ShopPageClientProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-serif font-bold text-black mb-2">Shop All Products</h1>
-          <p className="text-gray-600">Discover our complete collection of luxury cosmetics</p>
+    <div className="min-h-screen maison-backdrop">
+      <div className="border-b border-black/5">
+        <div className="container mx-auto px-4 pt-16 pb-14 text-center">
+          <p className="eyebrow text-rose-gold-dark mb-5">The collection</p>
+          <h1 className="display text-5xl md:text-7xl text-[#1c1714]">Shop all</h1>
+          <p className="text-gray-600 mt-5">Every Ayeza creation, in one place.</p>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className={`lg:w-64 flex-shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-            <div className="bg-white rounded-xl p-6 shadow-sm sticky top-24">
+            <div className="glass p-6 sticky top-32">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-serif font-bold text-black">Filters</h2>
                 <button
@@ -148,7 +150,7 @@ export default function ShopPage({ initialProductsData }: ShopPageClientProps) {
                         className="w-4 h-4 text-rose-gold border-gray-300 focus:ring-rose-gold"
                       />
                       <span className="ml-2 text-sm text-gray-600">
-                        {category.name}
+                        {displayName(category.name)}
                         {category.productCount != null && (
                           <span className="text-gray-400 ml-1">({category.productCount})</span>
                         )}

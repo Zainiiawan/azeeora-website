@@ -1,0 +1,27 @@
+import { Router } from './http';
+import authRoutes from './routes/auth';
+import { products, categories, brands } from './routes/catalog';
+import { cart, wishlist } from './routes/shopping';
+import { orders, payments } from './routes/orders';
+import { reviews, coupons, users, notifications, contact, analytics, shipping, settings } from './routes/admin';
+import { media } from './routes/media';
+
+/** Every endpoint of the old Express API, mounted under /api. */
+export const api = new Router();
+api.use('/auth', authRoutes);
+api.use('/products', products);
+api.use('/categories', categories);
+api.use('/brands', brands);
+api.use('/cart', cart);
+api.use('/wishlist', wishlist);
+api.use('/orders', orders);
+api.use('/reviews', reviews);
+api.use('/coupons', coupons);
+api.use('/users', users);
+api.use('/analytics', analytics);
+api.use('/media', media);
+api.use('/payments', payments);
+api.use('/notifications', notifications);
+api.use('/contact', contact);
+api.use('/shipping', shipping);
+api.use('/settings', settings);

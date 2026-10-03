@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { m as motion } from 'framer-motion';
-import { ShoppingCart, Eye, Heart, Star } from 'lucide-react';
+import { ShoppingBag, Heart, Star } from 'lucide-react';
 import { cn, formatPrice, optimizeCloudinaryUrl, getCloudinarySrcSet } from '@/lib/utils';
 import { getDiscountPercentage, getEffectivePrice, getDiscountDisplay } from '@/lib/productUtils';
 import { useDispatch, useSelector } from 'react-redux';
@@ -26,7 +26,7 @@ interface ProductCardProps {
 }
 
 const PLACEHOLDER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f9f0f3'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%23c29375'%3EAYEZA%3C/text%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f4efe8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='serif' font-size='22' letter-spacing='8' fill='%23a8875a'%3EAYEZA%3C/text%3E%3C/svg%3E";
 
 const ProductCard = ({ product, className, priority = false }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -104,66 +104,47 @@ const ProductCard = ({ product, className, priority = false }: ProductCardProps)
   return (
     <motion.div
       className={cn('group h-full flex flex-col', className)}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -5 }}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
     >
-      <div className="relative bg-white rounded-xl overflow-hidden luxury-border hover:shadow-xl transition-all duration-500 hover:border-rose-gold/40 flex-1">
-        {product.isComingSoon ? (
-          <div className="absolute top-3 left-3 bg-orange-500/90 backdrop-blur text-white text-[10px] font-bold px-3 py-1.5 rounded-md z-10 shadow-lg border border-orange-400/50 uppercase tracking-wider">
-            Coming Soon
-          </div>
-        ) : discountDisplay ? (
-          <div className="absolute top-3 left-3 bg-rose-gold-dark text-white text-xs font-bold px-2 py-1 rounded-md z-10">
-            {discountDisplay}
-          </div>
-        ) : null}
-
-        {product.isFeatured && (
-          <div className="absolute top-3 right-3 bg-black text-white text-xs font-bold px-2 py-1 rounded-md z-10">
-            Featured
-          </div>
-        )}
-
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-10 transition-all duration-300 opacity-100 translate-x-0">
-          <button
-            type="button"
-            onClick={handleWishlistToggle}
-            className={cn(
-              'w-12 h-12 flex items-center justify-center rounded-full shadow-lg border transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-gold',
-              isWishlisted
-                ? 'bg-rose-gold-dark border-rose-gold-dark text-white hover:bg-black'
-                : 'bg-white border-gray-200 text-gray-800 hover:border-rose-gold-dark hover:text-rose-gold-dark'
-            )}
-            aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-            aria-pressed={isWishlisted}
-          >
-            <Heart
-              className={cn(
-                'w-5 h-5 transition-transform duration-200',
-                isWishlisted ? 'fill-current scale-110' : 'fill-none'
-              )}
-            />
-          </button>
-          <Link
-            href={`/products/${product.slug}`}
-            className="w-12 h-12 flex items-center justify-center bg-white border border-gray-200 text-gray-800 rounded-full shadow-lg hover:border-rose-gold hover:text-rose-gold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-gold"
-            aria-label="View product details"
-          >
-            <Eye className="w-5 h-5" />
-          </Link>
+      <div className="relative overflow-hidden glass-sheen bg-[#f4efe8] flex-1">
+        {/* Labels */}
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+          {product.isComingSoon ? (
+            <span className="eyebrow !text-[0.55rem] glass px-3 py-1.5 text-[#1c1714]">Coming soon</span>
+          ) : discountDisplay ? (
+            <span className="eyebrow !text-[0.55rem] bg-[#1c1714] text-[#f7f3ee] px-3 py-1.5">{discountDisplay}</span>
+          ) : null}
+          {product.isFeatured && !product.isComingSoon && (
+            <span className="eyebrow !text-[0.55rem] glass px-3 py-1.5 text-[#1c1714]">Signature</span>
+          )}
         </div>
 
-        <Link href={`/products/${product.slug}`} className="block aspect-square overflow-hidden bg-gray-100">
+        <button
+          type="button"
+          onClick={handleWishlistToggle}
+          className={cn(
+            'absolute top-3 right-3 z-10 w-10 h-10 flex items-center justify-center rounded-full transition-all duration-500',
+            isWishlisted ? 'text-rose-gold-dark' : 'text-[#1c1714]/70 hover:text-[#1c1714]'
+          )}
+          aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-pressed={isWishlisted}
+        >
+          <Heart className={cn('w-[18px] h-[18px]', isWishlisted ? 'fill-current' : 'fill-none')} strokeWidth={1.25} />
+        </button>
+
+        <Link href={`/products/${product.slug}`} className="block aspect-[4/5] overflow-hidden" aria-label={product.name}>
           <img
             src={imageSrc}
-            {...(imageSrcSet ? { srcSet: imageSrcSet, sizes: "(max-width: 768px) 50vw, 33vw" } : {})}
+            {...(imageSrcSet ? { srcSet: imageSrcSet, sizes: '(max-width: 768px) 50vw, 25vw' } : {})}
             alt={mainImage?.alt || product.name}
             className={cn(
-              'w-full h-full object-cover transition-transform duration-500',
-              isHovered ? 'scale-110' : 'scale-100'
+              'w-full h-full object-cover transition-transform duration-[1600ms] ease-[cubic-bezier(0.22,1,0.36,1)] mix-blend-multiply',
+              isHovered ? 'scale-[1.06]' : 'scale-100'
             )}
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : 'auto'}
@@ -173,68 +154,62 @@ const ProductCard = ({ product, className, priority = false }: ProductCardProps)
           />
         </Link>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 via-black/30 to-transparent pt-12 flex gap-2">
+        {/* Glass action bar: always visible on touch, slides up on hover for desktop */}
+        <div className="absolute inset-x-3 bottom-3 z-10 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] md:translate-y-[calc(100%+12px)] md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100">
           {product.isComingSoon ? (
-            <button
-              type="button"
-              disabled
-              className="w-full bg-white/50 backdrop-blur-md text-white border border-white/20 shadow-lg py-3 rounded-lg font-semibold flex items-center justify-center gap-2 cursor-not-allowed uppercase tracking-wider text-sm"
-            >
-              Coming Soon
-            </button>
+            <div className="glass eyebrow !text-[0.6rem] text-center py-3 text-[#1c1714]">Launching soon</div>
           ) : (
-            <>
+            <div className="glass flex">
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="flex-1 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 shadow-lg py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                title="Add to Cart"
+                className="flex-1 eyebrow !text-[0.6rem] py-3 text-[#1c1714] hover:bg-white/50 transition-colors flex items-center justify-center gap-2"
               >
-                <ShoppingCart className="w-5 h-5" />
+                <ShoppingBag className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Add to bag
               </button>
+              <span className="w-px bg-black/10" aria-hidden />
               <button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   router.push(`/checkout?buyNow=true&productId=${product._id}`);
                 }}
-                className="flex-[2] bg-rose-gold-dark hover:bg-black text-white shadow-lg py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="flex-1 eyebrow !text-[0.6rem] py-3 bg-[#1c1714]/90 text-[#f7f3ee] hover:bg-rose-gold-dark transition-colors"
               >
-                Buy Now
+                Buy now
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="pt-5 pb-2 text-center">
         <Link href={`/products/${product.slug}`}>
-          <h3 className="font-medium text-gray-900 hover:text-rose-gold transition-colors line-clamp-2">
+          <h3 className="font-serif text-[1.15rem] leading-snug text-[#1c1714] line-clamp-2 transition-colors duration-500 hover:text-rose-gold-dark">
             {product.name}
           </h3>
         </Link>
 
-        <div className="flex items-center gap-1 mt-1">
-          <div className="flex">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={cn(
-                  'w-4 h-4',
-                  i < Math.floor(product.rating) ? 'fill-rose-gold text-rose-gold' : 'text-gray-300'
-                )}
-              />
-            ))}
+        {product.reviewCount > 0 && (
+          <div className="flex items-center justify-center gap-1.5 mt-2" aria-label={`Rated ${product.rating} out of 5`}>
+            <div className="flex gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={cn('w-3 h-3', i < Math.round(product.rating) ? 'fill-rose-gold text-rose-gold' : 'text-gray-300')}
+                  strokeWidth={1}
+                />
+              ))}
+            </div>
+            <span className="text-[0.7rem] text-gray-500">({product.reviewCount})</span>
           </div>
-          <span className="text-sm text-gray-500">({product.reviewCount})</span>
-        </div>
+        )}
 
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-lg font-bold text-gray-900">{formatPrice(effectivePrice)}</span>
+        <div className="flex items-baseline justify-center gap-3 mt-2">
+          <span className="text-sm tracking-[0.12em] text-[#1c1714]">{formatPrice(effectivePrice)}</span>
           {product.basePrice > effectivePrice && (
-            <span className="text-sm text-gray-500 line-through">
-              {formatPrice(product.basePrice)}
-            </span>
+            <span className="text-xs text-gray-400 line-through">{formatPrice(product.basePrice)}</span>
           )}
         </div>
       </div>

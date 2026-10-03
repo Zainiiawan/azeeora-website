@@ -1,0 +1,83 @@
+# Ayeza Cosmetics: one app, one deploy
+
+The storefront, admin panel and API now live in this single Next.js app.
+The old Express server (`ayezacosmetics-backend`, hosted on Render) is no
+longer needed once this is live.
+
+```
+src/app/            pages (storefront + /admin)
+src/app/api/        every /api/* endpoint (catch-all route -> src/server/api.ts)
+src/server/         API code: routes, auth, emails, Postgres access
+supabase/migrations SQL schema for the Supabase database
+scripts/            one-off MongoDB -> Supabase data copy
+```
+
+## Database (Supabase, project `ayeza-cosmetics`, Telgates org)
+
+The schema in `supabase/migrations/0001_init.sql` is already applied.
+Each old Mongo collection is a table with the original `_id`, the full
+document in `data` (jsonb) and indexed columns for the fields the API
+filters on. Uniqueness is enforced in the database:
+
+| table | unique on |
+|---|---|
+| users | email |
+| products | slug, sku |
+| categories / subcategories / brands | slug |
+| orders | order_number |
+| coupons | code |
+| carts | user |
+| shipping_rates | city (case-insensitive) |
+| reviews | one per customer (or guest email) per product |
+
+Row Level Security is on with no policies, so the public Supabase keys can
+read nothing. Only the server (via `DATABASE_URL`) can access data.
+
+## Environment variables (Vercel → Project → Settings → Environment Variables)
+
+| name | value |
+|---|---|
+| `DATABASE_URL` | Supabase → Connect → **Transaction pooler** URI (port 6543), with the database password |
+| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | long random strings (reuse the Render values to keep people signed in) |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | same as on Render |
+| `RESEND_API_KEY`, `RESEND_FROM` | same as on Render (or `EMAIL_USER` / `EMAIL_PASSWORD` for Gmail SMTP) |
+| `ADMIN_EMAIL` | where new-order and contact emails go |
+| `CLIENT_URL` | `https://ayezacosmetics.store` (used in email links) |
+| `NEXT_PUBLIC_APP_URL` | `https://ayezacosmetics.store` |
+| `NEXT_PUBLIC_API_URL` | `/api` (already set in `.env.production`) |
+
+## Moving the data from MongoDB
+
+Run once from any machine that can reach both databases:
+
+```bash
+npm install
+MONGODB_URI="mongodb+srv://…/ayezacosmetics" \
+DATABASE_URL="postgresql://…supabase…:6543/postgres" \
+node scripts/migrate-mongo-to-supabase.mjs --dry-run   # counts only
+
+MONGODB_URI=… DATABASE_URL=… node scripts/migrate-mongo-to-supabase.mjs
+```
+
+It copies users (with their password hashes, so everyone can still log in),
+products, categories, orders, reviews, coupons, carts, notifications,
+settings and shipping rates. It keeps every original id, is safe to re-run
+(upserts), and finishes with a Mongo vs Postgres count per collection.
+
+## Local development
+
+```bash
+cp .env.production .env.local        # then add DATABASE_URL and JWT secrets
+npm run dev                          # http://localhost:3000, API at /api
+```
+
+Any Postgres works locally: apply `supabase/migrations/0001_init.sql` to it.
+
+## Notes
+
+- Uploads go straight to Cloudinary. Vercel caps request bodies at about
+  4.5 MB, so very large product videos should be uploaded in the
+  Cloudinary console and pasted in, rather than through the admin form.
+- Rate limits (login, reviews, uploads) are per server instance.
+- Google sign-in was configured on the old server but the storefront never
+  used it, so it was not carried over.

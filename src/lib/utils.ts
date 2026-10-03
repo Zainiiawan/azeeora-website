@@ -47,8 +47,8 @@ export function optimizeCloudinaryUrl(url: string, width = 800, square = false):
     // f_auto: automatic format (WebP/AVIF)
     // q_auto: automatic quality
     // w_<width>: limit width to save bandwidth
-    // c_pad,b_white,ar_1:1: pad to a perfect square with white background (prevents transparent PNGs from turning black)
-    const crop = square ? ',c_pad,b_white,ar_1:1' : '';
+    // c_pad,b_rgb:f4efe8,ar_4:5: pad packshots onto the ivory card colour in a 4:5 frame
+    const crop = square ? ',c_pad,b_rgb:f4efe8,ar_4:5' : '';
     return `${parts[0]}/upload/f_auto,q_auto,w_${width}${crop}/${parts[1]}`;
   }
   return url;
@@ -57,4 +57,10 @@ export function optimizeCloudinaryUrl(url: string, width = 800, square = false):
 export function getCloudinarySrcSet(url: string, widths = [300, 400, 500, 600, 800, 1000, 1200], square = false): string {
   if (!url || !url.includes('res.cloudinary.com')) return '';
   return widths.map((w) => `${optimizeCloudinaryUrl(url, w, square)} ${w}w`).join(', ');
+}
+/** "WHITENING CREAM" -> "Whitening Cream" for display; leaves mixed-case names alone. */
+export function displayName(name?: string): string {
+  if (!name) return '';
+  if (name !== name.toUpperCase()) return name;
+  return name.toLowerCase().replace(/\b\p{L}/gu, (c) => c.toUpperCase());
 }

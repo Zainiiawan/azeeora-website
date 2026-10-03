@@ -1,3 +1,4 @@
+import { serverFetch } from '@/lib/serverFetch';
 import type { MetadataRoute } from 'next';
 import { config, getBaseUrl } from '@/lib/config';
 import { blogPosts } from '@/lib/data/blog';
@@ -44,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let page = 1;
     let hasNext = true;
     while (hasNext) {
-      const productsRes = await fetch(`${config.apiUrl}/products?limit=100&page=${page}`, { next: { revalidate: 3600 } });
+      const productsRes = await serverFetch(`/products?limit=100&page=${page}`, { next: { revalidate: 3600 } });
       if (productsRes.ok) {
         const { data: { products, pagination } } = await productsRes.json();
         if (Array.isArray(products)) {
@@ -65,7 +66,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     // Fetch categories
-    const categoriesRes = await fetch(`${config.apiUrl}/categories`, { next: { revalidate: 3600 } });
+    const categoriesRes = await serverFetch(`/categories`, { next: { revalidate: 3600 } });
     if (categoriesRes.ok) {
       const { data } = await categoriesRes.json();
       if (Array.isArray(data)) {

@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { categoryApi } from '@/lib/api/categoryApi';
 import { productApi } from '@/lib/api/productApi';
 import CategorySeoContent from '@/components/categories/CategorySeoContent';
+import { displayName } from '@/lib/utils';
 
 const SORT_MAP: Record<string, 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'bestselling' | undefined> = {
   featured: 'bestselling',
@@ -81,7 +82,7 @@ export default function CategoryPageClient({ initialCategoryData, initialProduct
   const pagination = data?.pagination;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen maison-backdrop">
       <div className="bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-3">
           <nav className="text-sm text-gray-500 flex items-center gap-2">
@@ -94,13 +95,14 @@ export default function CategoryPageClient({ initialCategoryData, initialProduct
         </div>
       </div>
 
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-8">
+      <div className="border-b border-black/5">
+        <div className="container mx-auto px-4 pt-10 pb-14 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-3xl md:text-4xl font-serif font-bold text-black mb-2">
-              {category?.name ?? 'Category'}
+            <p className="eyebrow text-rose-gold-dark mb-5">Collection</p>
+            <h1 className="display text-5xl md:text-7xl text-[#1c1714] mb-5">
+              {displayName(category?.name) || 'Category'}
             </h1>
-            <p className="text-gray-600 max-w-2xl">
+            <p className="text-gray-600 max-w-2xl mx-auto">
               {category?.description ?? 'Browse our collection'}
             </p>
           </motion.div>

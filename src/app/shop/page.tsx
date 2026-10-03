@@ -1,3 +1,4 @@
+import { serverFetch } from '@/lib/serverFetch';
 import { Metadata } from 'next';
 import ShopPageClient from './ShopPageClient';
 import { config } from '@/lib/config';
@@ -30,8 +31,8 @@ export default async function ShopPageServer() {
   let initialProductsData = null;
   try {
     // Default: page 1, limit 12, sortBy bestselling
-    const productsRes = await fetch(
-      `${config.apiUrl}/products?page=1&limit=12&sortBy=bestselling`,
+    const productsRes = await serverFetch(
+      `/products?page=1&limit=12&sortBy=bestselling`,
       {
         next: { revalidate: 3600, tags: ['products'] },
       }

@@ -1,29 +1,38 @@
 @import "tailwindcss";
 
 :root {
-  /* Luxury Rose Gold, Black, and White Theme — light storefront */
-  --background: #ffffff;
-  --foreground: #0a0a0a;
-  --rose-gold: #b76e79;
-  --rose-gold-light: #e8c4c4;
-  --rose-gold-dark: #8b4d5b;
-  --black: #0a0a0a;
+  /* MAISON AYEZA — ivory, espresso and champagne.
+     Token names are kept (rose-gold*) so every existing page re-skins at once. */
+  --background: #f7f3ee;          /* warm ivory */
+  --foreground: #1c1714;          /* espresso */
+  --rose-gold: #a8875a;           /* champagne gold (signature accent) */
+  --rose-gold-light: #e9dccb;     /* pale champagne */
+  --rose-gold-dark: #6f5636;      /* deep bronze, AA on ivory */
+  --blush: #ead7d1;               /* Flora blush, used for glass tints */
+  --black: #1c1714;
   --white: #ffffff;
-  --gray-50: #faf9f9;
-  --gray-100: #f5f5f5;
-  --gray-200: #e5e5e5;
-  --gray-300: #d4d4d4;
-  --gray-400: #a3a3a3;
-  --gray-500: #737373;
-  --gray-600: #525252;
-  --gray-700: #404040;
-  --gray-800: #262626;
-  --gray-900: #171717;
-  --input-bg: #ffffff;
-  --input-text: #0a0a0a;
-  --input-placeholder: #737373;
-  --input-border: #d4d4d4;
-  --input-border-focus: #b76e79;
+  --gray-50: #faf7f3;
+  --gray-100: #f1ebe3;
+  --gray-200: #e4dbd0;
+  --gray-300: #cfc3b5;
+  --gray-400: #a89b8c;
+  --gray-500: #7d7064;
+  --gray-600: #5e534a;
+  --gray-700: #463d36;
+  --gray-800: #2e2722;
+  --gray-900: #1c1714;
+  --input-bg: #fffdfa;
+  --input-text: #1c1714;
+  --input-placeholder: #8a7d70;
+  --input-border: #d9cdbf;
+  --input-border-focus: #a8875a;
+
+  /* Glass */
+  --glass-bg: rgba(255, 252, 248, 0.55);
+  --glass-bg-strong: rgba(255, 252, 248, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 20px 50px -20px rgba(60, 40, 20, 0.25);
+  --ease-lux: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -46,8 +55,9 @@
   --color-gray-900: var(--gray-900);
 
   /* Luxury Typography */
-  --font-serif: "Playfair Display", Georgia, serif;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: var(--font-display), "Bodoni Moda", Didot, Georgia, serif;
+  --font-sans: var(--font-body), "Jost", "Helvetica Neue", system-ui, sans-serif;
+  --color-blush: var(--blush);
 }
 
 /*
@@ -57,7 +67,7 @@
 */
 html {
   color-scheme: light;
-  background-color: #0a0a0a;
+  background-color: #1c1714;
 }
 
 body {
@@ -80,25 +90,147 @@ body {
   }
 }
 
-/* Luxury Design System */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+/* Luxury Design System ---------------------------------------------------- */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    line-height: 1.08;
+    color: var(--foreground);
+  }
+
+  body {
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+}
+
+::selection {
+  background: var(--rose-gold-light);
   color: var(--foreground);
 }
 
+@layer components {
+/* Small spaced capitals used for labels, nav and eyebrows */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+}
+
+.hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168, 135, 90, 0.55), transparent);
+}
+
+/* Signature frosted glass */
+.glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  backdrop-filter: blur(28px) saturate(170%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-dark {
+  background: rgba(28, 23, 20, 0.38);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+/* A slow light sweep across glass on hover */
+.glass-sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.glass-sheen::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+  transform: translateX(-60%);
+  transition: transform 1.2s var(--ease-lux);
+  pointer-events: none;
+  z-index: 1;
+}
+.glass-sheen:hover::after {
+  transform: translateX(60%);
+}
+
+/* Soft ambient background for glass to sit on */
+.maison-backdrop {
+  background:
+    radial-gradient(60% 50% at 15% 10%, rgba(234, 215, 209, 0.75), transparent 70%),
+    radial-gradient(50% 45% at 90% 20%, rgba(233, 220, 203, 0.8), transparent 70%),
+    radial-gradient(70% 60% at 50% 100%, rgba(240, 232, 222, 0.9), transparent 70%),
+    var(--background);
+}
+
+.btn-lux {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem 2.25rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  transition: all 0.5s var(--ease-lux);
+}
+
+.link-underline {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.5s var(--ease-lux);
+}
+.link-underline:hover {
+  background-size: 100% 1px;
+}
+}
+
+/* Back-compat helpers used across older pages */
 .rose-gold-gradient {
-  background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-light) 100%);
+  background: linear-gradient(135deg, var(--rose-gold-dark) 0%, var(--rose-gold) 100%);
 }
 
 .luxury-shadow {
-  box-shadow: 0 4px 20px rgba(183, 110, 121, 0.15);
+  box-shadow: 0 18px 40px -22px rgba(60, 40, 20, 0.35);
 }
 
 .luxury-border {
-  border: 2px solid rgba(183, 110, 121, 0.4);
-  box-shadow: 0 8px 25px rgba(183, 110, 121, 0.15);
+  border: 1px solid rgba(168, 135, 90, 0.35);
+  box-shadow: 0 18px 40px -22px rgba(60, 40, 20, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* High-contrast form controls site-wide */
@@ -137,8 +269,8 @@ select:-webkit-autofill {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -146,8 +278,8 @@ select:-webkit-autofill {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--rose-gold);
-  border-radius: 4px;
+  background: var(--gray-300);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -173,5 +305,62 @@ select:-webkit-autofill {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.9s var(--ease-lux);
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 38s linear infinite;
+}
+
+@keyframes slowZoom {
+  from { transform: scale(1.08); }
+  to { transform: scale(1); }
+}
+.animate-slow-zoom {
+  animation: slowZoom 2.8s var(--ease-lux) both;
+}
+
+/* Storefront-wide refinements (admin is outside .maison and keeps its look) */
+.maison .rounded-lg,
+.maison .rounded-xl,
+.maison .rounded-2xl,
+.maison .rounded-3xl,
+.maison .rounded-md {
+  border-radius: 2px;
+}
+.maison .bg-white {
+  background-color: #fffdfa;
+}
+.maison .shadow-sm,
+.maison .shadow,
+.maison .shadow-md,
+.maison .shadow-lg,
+.maison .shadow-xl {
+  box-shadow: 0 18px 40px -26px rgba(60, 40, 20, 0.28);
+}
+.maison .border-gray-100,
+.maison .border-gray-200 {
+  border-color: rgba(28, 23, 20, 0.08);
+}
+.maison input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.maison select,
+.maison textarea {
+  border-radius: 0;
+}
+.maison input[type='checkbox'],
+.maison input[type='radio'] {
+  accent-color: var(--rose-gold-dark);
+}
+.maison input[type='range'] {
+  accent-color: var(--rose-gold-dark);
+}
+
+/* Bodoni reads best at regular weight; older pages asked for bold */
+.maison h1.font-bold, .maison h2.font-bold, .maison h3.font-bold,
+.maison h1.font-semibold, .maison h2.font-semibold, .maison h3.font-semibold {
+  font-weight: 400;
 }

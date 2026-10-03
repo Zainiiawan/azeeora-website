@@ -1,9 +1,10 @@
 'use client';
 
+import { displayName } from '@/lib/utils';
 import { m as motion } from 'framer-motion';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { categoryApi } from '@/lib/api/categoryApi';
 
 export default function CategoriesPage() {
@@ -13,15 +14,12 @@ export default function CategoriesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-12">
+    <div className="min-h-screen maison-backdrop">
+      <div className="border-b border-black/5">
+        <div className="container mx-auto px-4 pt-16 pb-14">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-            <span className="inline-flex items-center gap-2 bg-rose-gold/10 text-rose-gold px-4 py-2 rounded-full text-sm font-medium mb-4">
-              <Sparkles className="w-4 h-4" />
-              Our Collections
-            </span>
-            <h1 className="text-4xl md:text-5xl font-serif font-bold text-black mb-4">Shop by Category</h1>
+            <p className="eyebrow text-rose-gold-dark mb-5">Our collections</p>
+            <h1 className="display text-5xl md:text-7xl text-[#1c1714] mb-5">Shop by ritual</h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Explore our carefully curated categories designed to enhance your natural beauty
             </p>
@@ -63,7 +61,7 @@ export default function CategoriesPage() {
                     </div>
                     <div className="p-6">
                       <h3 className="text-2xl font-serif font-bold text-black mb-2 group-hover:text-rose-gold transition-colors">
-                        {category.name}
+                        {displayName(category.name)}
                       </h3>
                       <p className="text-gray-600 mb-4 line-clamp-2">
                         {category.description ?? 'Explore our collection'}

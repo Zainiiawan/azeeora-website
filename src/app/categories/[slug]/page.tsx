@@ -1,10 +1,11 @@
+import { serverFetch } from '@/lib/serverFetch';
 import { Metadata } from 'next';
 import CategoryPageClient from './CategoryPageClient';
 import { config } from '@/lib/config';
 
 async function getCategoryBySlug(slug: string) {
   try {
-    const res = await fetch(`${config.apiUrl}/categories/${slug}`, {
+    const res = await serverFetch(`/categories/${slug}`, {
       next: { revalidate: 3600 },
     });
     if (!res.ok) return null;
@@ -108,8 +109,8 @@ export default async function CategoryPageServer({ params }: { params: Promise<{
   if (category?._id) {
     try {
       // Default: page 1, limit 12, sortBy bestselling
-      const productsRes = await fetch(
-        `${config.apiUrl}/products?category=${category._id}&page=1&limit=12&sortBy=bestselling`,
+      const productsRes = await serverFetch(
+        `/products?category=${category._id}&page=1&limit=12&sortBy=bestselling`,
         {
           next: { revalidate: 3600, tags: ['products'] },
         }
