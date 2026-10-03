@@ -256,7 +256,27 @@ export default function AdminOrdersPage() {
                   {(selectedOrder.tax || 0) > 0 ? (
                     <p className="text-gray-600"><span className="mr-4">Tax:</span> +{formatPrice(selectedOrder.tax || 0)}</p>
                   ) : null}
+                  {(selectedOrder.pointsDiscount || 0) > 0 ? (
+                    <p className="text-green-600"><span className="mr-4">Loyalty points:</span> -{formatPrice(selectedOrder.pointsDiscount || 0)}</p>
+                  ) : null}
                   <p className="text-lg font-bold text-gray-900 pt-2"><span className="mr-4 text-base font-medium">Total:</span> {formatPrice(selectedOrder.total)}</p>
+                  {(selectedOrder.walletUsed || 0) > 0 ? (
+                    <>
+                      <p className="text-gray-600"><span className="mr-4">Paid from wallet:</span> -{formatPrice(selectedOrder.walletUsed || 0)}</p>
+                      <p className="font-semibold text-gray-900"><span className="mr-4">To collect:</span> {formatPrice(selectedOrder.amountDue ?? 0)}</p>
+                    </>
+                  ) : null}
+                  {selectedOrder.member && (selectedOrder.member.buyerType !== 'customer' || selectedOrder.member.sponsorCode) ? (
+                    <div className="mt-3 pt-3 border-t text-sm text-gray-600 space-y-1">
+                      {selectedOrder.member.buyerType === 'partner' && (
+                        <p>Brand Partner order · {selectedOrder.member.discountPct}% off ({formatPrice(selectedOrder.member.memberDiscount || 0)}) · {selectedOrder.member.bv} BV</p>
+                      )}
+                      {selectedOrder.member.buyerType === 'business' && <p>Wholesale order · saved {formatPrice(selectedOrder.member.memberDiscount || 0)}</p>}
+                      {selectedOrder.member.sponsorCode && (
+                        <p>Referral: {selectedOrder.member.sponsorCode} earns {formatPrice(selectedOrder.member.commission || 0)} ({selectedOrder.member.commissionPct}%) on delivery</p>
+                      )}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

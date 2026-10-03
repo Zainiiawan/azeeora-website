@@ -88,6 +88,9 @@ export default function AdminProductsPage() {
     discountValue: '',
     isComingSoon: false,
     launchDate: '',
+    bv: '',
+    wholesalePrice: '',
+    wholesaleMinQty: '',
   });
 
   const filteredProducts = products.filter((product) => {
@@ -117,6 +120,9 @@ export default function AdminProductsPage() {
         discountValue: product.discount?.value?.toString() || '',
         isComingSoon: product.isComingSoon || false,
         launchDate: product.launchDate ? new Date(product.launchDate).toISOString().split('T')[0] : '',
+        bv: product.bv != null ? String(product.bv) : '',
+        wholesalePrice: product.wholesalePrice != null ? String(product.wholesalePrice) : '',
+        wholesaleMinQty: product.wholesaleMinQty != null ? String(product.wholesaleMinQty) : '',
       });
     } else {
       setEditingProduct(null);
@@ -135,6 +141,9 @@ export default function AdminProductsPage() {
         discountValue: '',
         isComingSoon: false,
         launchDate: '',
+        bv: '',
+        wholesalePrice: '',
+        wholesaleMinQty: '',
       });
     }
     setSaveError('');
@@ -160,6 +169,9 @@ export default function AdminProductsPage() {
       discountValue: '',
       isComingSoon: false,
       launchDate: '',
+      bv: '',
+      wholesalePrice: '',
+      wholesaleMinQty: '',
     });
   };
 
@@ -232,6 +244,9 @@ export default function AdminProductsPage() {
           : null,
         isComingSoon: formData.isComingSoon,
         launchDate: formData.launchDate || undefined,
+        bv: formData.bv !== '' ? Number(formData.bv) : undefined,
+        wholesalePrice: formData.wholesalePrice !== '' ? Number(formData.wholesalePrice) : null,
+        wholesaleMinQty: formData.wholesaleMinQty !== '' ? parseInt(formData.wholesaleMinQty, 10) : null,
       };
 
       if (editingProduct) {
@@ -600,6 +615,27 @@ export default function AdminProductsPage() {
                       <option value="Inactive">Inactive</option>
                     </select>
                   </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                  {(
+                    [
+                      ['bv', 'Points (BV) per unit', 'Blank = price ÷ Rs per BV'],
+                      ['wholesalePrice', 'Wholesale price (PKR)', 'Blank = default wholesale discount'],
+                      ['wholesaleMinQty', 'Wholesale minimum qty', 'Blank = default minimum'],
+                    ] as const
+                  ).map(([key, label, hint]) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={formData[key]}
+                        onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-rose-gold focus:ring-2 focus:ring-rose-gold focus:ring-opacity-20 bg-white text-gray-900 placeholder-gray-400"
+                        placeholder={hint}
+                      />
+                    </div>
+                  ))}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                   <div className="flex items-center h-full">

@@ -1,11 +1,14 @@
 import { z } from 'zod';
 
+// Full URL (uploads) or a path on this site (/brand/...)
+const imageUrl = z.string().refine((v) => /^https?:\/\//.test(v) || /^\/[^/]/.test(v), 'Invalid image URL');
+
 // ==========================================
 // Product Schemas
 // ==========================================
 
 const productImageSchema = z.object({
-  url: z.string().url(),
+  url: imageUrl,
   publicId: z.string(),
   alt: z.string().optional(),
   isMain: z.boolean().optional(),
@@ -33,7 +36,7 @@ export const createProductSchema = z.object({
   images: z.array(productImageSchema).min(1, 'At least one image is required'),
   video: z
     .object({
-      url: z.string().url(),
+      url: imageUrl,
       publicId: z.string().min(1),
     })
     .optional(),

@@ -39,9 +39,28 @@ export interface PaymentProof {
   rejectionReason?: string;
 }
 
+export interface OrderMemberInfo {
+  buyerType?: 'customer' | 'partner' | 'business';
+  discountPct?: number;
+  memberDiscount?: number;
+  bv?: number;
+  sponsor?: string;
+  sponsorCode?: string;
+  commission?: number;
+  commissionPct?: number;
+  pointsRedeemed?: number;
+  pointsEarned?: number;
+  walletUsed?: number;
+}
+
 export interface Order {
   _id: string;
   orderNumber: string;
+  orderType?: 'b2c' | 'partner' | 'b2b';
+  member?: OrderMemberInfo;
+  walletUsed?: number;
+  pointsDiscount?: number;
+  amountDue?: number;
   user: string | { _id: string; firstName: string; lastName: string; email: string; phone?: string };
   customerType?: 'registered' | 'guest';
   customerName?: string;

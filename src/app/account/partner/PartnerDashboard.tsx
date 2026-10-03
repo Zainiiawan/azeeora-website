@@ -20,6 +20,8 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
+const METHOD: Record<string, string> = { jazzcash: 'JazzCash', easypaisa: 'Easypaisa', bank: 'Bank' };
+
 const ENTRY_LABEL: Record<string, string> = {
   commission: 'Referral commission',
   commission_reversal: 'Commission reversed',
@@ -270,7 +272,7 @@ function WalletTab({ onPayout }: { onPayout: () => void }) {
               {withdraw.isPending ? 'Sending…' : 'Request withdrawal'}
             </button>
             <p className="w-full text-[0.85rem] text-muted">
-              Paid to {member.kyc?.method === 'bank' ? member.kyc?.bankName : member.kyc?.method} {member.kyc?.accountNumber}
+              Paid to {member.kyc?.method === 'bank' ? member.kyc?.bankName : METHOD[member.kyc?.method ?? '']} {member.kyc?.accountNumber}
             </p>
           </form>
         )}
@@ -357,7 +359,7 @@ function Payout() {
             <StatusBadge status={kyc.status} label={kyc.status === 'approved' ? 'Verified' : undefined} />
           </div>
           <p className="text-[0.95rem]">
-            {kyc.accountTitle}, {kyc.method === 'bank' ? kyc.bankName : kyc.method} {kyc.accountNumber}
+            {kyc.accountTitle}, {kyc.method === 'bank' ? kyc.bankName : METHOD[kyc.method]} {kyc.accountNumber}
           </p>
           {kyc.status === 'rejected' && kyc.note && <p className="text-[0.9rem] text-sale">{kyc.note}</p>}
         </div>

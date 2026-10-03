@@ -32,6 +32,9 @@ export interface Product {
   sku?: string;
   images: ProductImage[];
   basePrice: number;
+  bv?: number;
+  wholesalePrice?: number | null;
+  wholesaleMinQty?: number | null;
   compareAtPrice?: number;
   rating: number;
   reviewCount: number;
@@ -92,6 +95,9 @@ export interface CreateProductData {
   description?: string;
   images?: ProductImage[];
   discount?: ProductDiscount | null;
+  bv?: number | null;
+  wholesalePrice?: number | null;
+  wholesaleMinQty?: number | null;
 }
 
 export type UpdateProductData = Partial<CreateProductData>;
@@ -118,6 +124,9 @@ const toApiPayload = (data: CreateProductData | UpdateProductData): Record<strin
   if (data.discount !== undefined) {
     payload.discount = data.discount;
   }
+  if (data.bv !== undefined && data.bv !== null) payload.bv = data.bv;
+  if (data.wholesalePrice !== undefined) payload.wholesalePrice = data.wholesalePrice;
+  if (data.wholesaleMinQty !== undefined) payload.wholesaleMinQty = data.wholesaleMinQty;
 
   if (data.images && data.images.length > 0) {
     payload.images = data.images.map((img, i) => ({
