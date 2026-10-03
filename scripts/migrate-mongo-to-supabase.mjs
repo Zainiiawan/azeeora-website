@@ -71,7 +71,10 @@ for (const [collection, table] of Object.entries(COLLECTIONS)) {
   for (const raw of docs) {
     const { _id, ...rest } = clean(raw);
     const now = new Date().toISOString();
-    const data = { ...rest, createdAt: rest.createdAt ?? now, updatedAt: rest.updatedAt ?? rest.createdAt ?? now };
+    // Documents without timestamps get their creation time from the ObjectId
+    const idTime = /^[a-f0-9]{24}$/i.test(String(_id)) ? new Date(parseInt(String(_id).slice(0, 8), 16) * 1000).toISOString() : now;
+    const createdAt = rest.createdAt ?? idTime;
+    const data = { ...rest, createdAt, updatedAt: rest.updatedAt ?? createdAt };
     if (collection === 'users' && data.email) data.email = String(data.email).toLowerCase().trim();
     if (DRY) {
       written++;

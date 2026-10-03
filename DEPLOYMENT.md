@@ -48,6 +48,13 @@ read nothing. Only the server (via `DATABASE_URL`) can access data.
 
 ## Moving the data from MongoDB
 
+**Done on 3 Oct 2026.** All live data from the `ayezacosmetics` Atlas project
+(Cluster0, database `ayezacosmetics`) is in Supabase: 1 user, 2 categories,
+2 products, 4 reviews, 4 notifications, 1 settings record and 6 shipping
+rates, verified record by record. Orders, carts, coupons, brands and
+subcategories were empty in MongoDB. Re-run the script below only if new
+data lands in MongoDB before the switch-over (it upserts, so it is safe).
+
 Run once from any machine that can reach both databases:
 
 ```bash
