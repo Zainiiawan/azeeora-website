@@ -20,6 +20,9 @@ import { shippingApi } from '@/lib/api/shippingApi';
 import { settingsApi } from '@/lib/api/settingsApi';
 import ManualPaymentCard from '@/components/payments/ManualPaymentCard';
 import { getEffectivePrice } from '@/lib/productUtils';
+import { memberApi } from '@/lib/api/memberApi';
+import { getRef } from '@/lib/member/referral';
+import { Wallet, Sparkles } from 'lucide-react';
 
 interface CheckoutFormData {
   email: string;
@@ -92,6 +95,17 @@ function CheckoutContent() {
   const paymentMethod = watch('paymentMethod');
   const selectedCity = watch('city');
 
+  // Wallet, loyalty points and partner referral, priced by the server
+  const [walletWanted, setWalletWanted] = useState(0);
+  const [pointsWanted, setPointsWanted] = useState(0);
+  const [refCode, setRefCode] = useState<string | undefined>(undefined);
+  useEffect(() => setRefCode(getRef()), []);
+  const [debouncedCity, setDebouncedCity] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedCity((selectedCity || '').trim()), 400);
+    return () => clearTimeout(t);
+  }, [selectedCity]);
+
   const paymentMethods = useMemo(
     () =>
       [
@@ -153,8 +167,34 @@ function CheckoutContent() {
   }, [effectiveSubtotal, selectedCity, shippingRates, storeSettings]);
 
   const couponDiscountAmount = isBuyNow ? 0 : (cartDiscount || 0);
-  const totalDiscount = productDiscount + couponDiscountAmount;
-  const total = Math.max(0, effectiveSubtotal + (calculatedShipping ?? 0) - couponDiscountAmount);
+  const quoteItems = useMemo(
+    () =>
+      checkoutItems.map((item) => {
+        const variant = 'variant' in item ? (item as { variant?: string }).variant : undefined;
+        return { productId: item.product._id, quantity: item.quantity, ...(variant ? { variant } : {}) };
+      }),
+    [checkoutItems]
+  );
+  const { data: quote } = useQuery({
+    queryKey: ['checkout-quote', quoteItems, debouncedCity, isBuyNow ? null : couponCode, walletWanted, pointsWanted, refCode, isAuthenticated],
+    queryFn: () =>
+      memberApi.quote({
+        items: quoteItems,
+        city: debouncedCity || undefined,
+        couponCode: !isBuyNow && couponCode ? couponCode : undefined,
+        refCode,
+        walletAmount: walletWanted || undefined,
+        pointsToRedeem: pointsWanted || undefined,
+      }),
+    enabled: quoteItems.length > 0,
+    placeholderData: (prev) => prev,
+    retry: false,
+  });
+
+  const quoteShipping = quote ? quote.shippingCost : calculatedShipping;
+  const total = quote ? quote.total : Math.max(0, effectiveSubtotal + (calculatedShipping ?? 0) - couponDiscountAmount);
+  const amountDue = quote ? quote.amountDue : total;
+  const paidByWallet = !!quote && quote.walletUsed > 0 && quote.amountDue === 0;
 
   const onSubmit = async (data: CheckoutFormData) => {
     if (checkoutItems.length === 0) {
@@ -176,8 +216,11 @@ function CheckoutContent() {
           postalCode: data.postalCode,
           country: data.country,
         },
-        paymentMethod: data.paymentMethod,
+        paymentMethod: paidByWallet ? 'wallet' : data.paymentMethod,
         notes: data.notes,
+        refCode,
+        walletAmount: quote?.walletUsed || undefined,
+        pointsToRedeem: quote?.pointsRedeemed || undefined,
       };
 
       if (!isAuthenticated) {
@@ -304,7 +347,45 @@ function CheckoutContent() {
                   </div>
                 </div>
 
+                {/* Wallet and loyalty points */}
+                {isAuthenticated && quote && (quote.walletAvailable > 0 || quote.pointsBalance >= quote.minRedeemPoints) && (
+                  <div className="space-y-3">
+                    {quote.walletAvailable > 0 && (
+                      <label className="flex items-start gap-4 p-4 border border-gray-200 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={walletWanted > 0}
+                          onChange={(e) => setWalletWanted(e.target.checked ? quote.walletAvailable : 0)}
+                        />
+                        <Wallet className="w-5 h-5 mt-0.5 text-gray-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Use my wallet balance</p>
+                          <p className="text-sm text-gray-500">
+                            {formatPrice(quote.walletAvailable)} available{quote.walletUsed > 0 ? `, ${formatPrice(quote.walletUsed)} applied` : ''}
+                          </p>
+                        </div>
+                      </label>
+                    )}
+                    {quote.pointsBalance >= quote.minRedeemPoints && (
+                      <label className="flex items-start gap-4 p-4 border border-gray-200 cursor-pointer">
+                        <input type="checkbox" className="mt-1" checked={pointsWanted > 0} onChange={(e) => setPointsWanted(e.target.checked ? quote.pointsBalance : 0)} />
+                        <Sparkles className="w-5 h-5 mt-0.5 text-gray-600" />
+                        <div>
+                          <p className="font-medium text-gray-900">Redeem my loyalty points</p>
+                          <p className="text-sm text-gray-500">
+                            {quote.pointsBalance} points{quote.pointsValue > 0 ? `, worth ${formatPrice(quote.pointsValue)} off this order` : ''}
+                          </p>
+                        </div>
+                      </label>
+                    )}
+                  </div>
+                )}
+
                 {/* Payment Method */}
+                {paidByWallet ? (
+                  <p className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-800 text-sm">Your wallet covers this order in full. No further payment needed.</p>
+                ) : (
                 <div>
                   <h2 className="text-xl font-serif font-semibold mb-4 flex items-center gap-2 border-b pb-2">
                     <Lock className="w-5 h-5 text-rose-gold" /> Payment Method
@@ -331,9 +412,10 @@ function CheckoutContent() {
                     })}
                   </div>
                 </div>
+                )}
 
-                {account && (
-                  <ManualPaymentCard account={account} amountLabel={formatPrice(total)} />
+                {account && !paidByWallet && (
+                  <ManualPaymentCard account={account} amountLabel={formatPrice(amountDue)} />
                 )}
 
                 <div>
@@ -352,11 +434,11 @@ function CheckoutContent() {
               {/* Submit Area */}
               <div className="bg-gray-50 p-6 md:p-8 border-t border-gray-200">
                 <Button type="submit" className="w-full py-4 text-lg font-medium" loading={isProcessing} size="lg">
-                  {paymentMethod === 'cod' ? 'Complete Order (Cash on Delivery)' : 'Place Order & Pay Securely'}
+                  {paidByWallet ? 'Place order (paid from wallet)' : paymentMethod === 'cod' ? 'Complete Order (Cash on Delivery)' : 'Place Order & Pay Securely'}
                 </Button>
-                {paymentMethod === 'cod' && (
+                {paymentMethod === 'cod' && !paidByWallet && (
                   <p className="text-center text-sm text-gray-500 mt-4">
-                    You will pay {formatPrice(total)} upon delivery.
+                    You will pay {formatPrice(amountDue)} upon delivery.
                   </p>
                 )}
               </div>
@@ -378,7 +460,7 @@ function CheckoutContent() {
                       <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                     </div>
                     <div className="flex items-center text-sm font-medium">
-                      {formatPrice(item.total)}
+                      {formatPrice(quote?.items[index]?.total ?? item.total)}
                     </div>
                   </div>
                 ))}
@@ -386,17 +468,36 @@ function CheckoutContent() {
               
               <div className="border-t pt-4 space-y-3 text-sm">
                 <div className="flex justify-between text-gray-600"><span>Subtotal</span><span className="font-medium text-gray-900">{formatPrice(originalSubtotal)}</span></div>
+                {quote && quote.memberDiscount > 0 && (
+                  <div className="flex justify-between text-sale font-medium">
+                    <span>{quote.buyerType === 'business' ? 'Wholesale prices' : `Partner discount (${quote.discountPct}%)`}</span>
+                    <span>-{formatPrice(quote.memberDiscount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  <span className="font-medium text-gray-900">{calculatedShipping === null ? '—' : calculatedShipping === 0 ? <span className="text-green-600">Free</span> : formatPrice(calculatedShipping)}</span>
+                  <span className="font-medium text-gray-900">{quoteShipping === null ? '—' : quoteShipping === 0 ? <span className="text-green-600">Free</span> : formatPrice(quoteShipping)}</span>
                 </div>
-                {totalDiscount > 0 && (
-                  <div className="flex justify-between text-rose-gold font-medium"><span>Discount</span><span>-{formatPrice(totalDiscount)}</span></div>
+                {productDiscount + (quote ? quote.discount : couponDiscountAmount) > 0 && (
+                  <div className="flex justify-between text-rose-gold font-medium"><span>Discount</span><span>-{formatPrice(productDiscount + (quote ? quote.discount : couponDiscountAmount))}</span></div>
+                )}
+                {quote?.couponError && <p className="text-xs text-sale">{quote.couponError}</p>}
+                {quote && quote.pointsValue > 0 && (
+                  <div className="flex justify-between text-gray-600"><span>Loyalty points ({quote.pointsRedeemed})</span><span>-{formatPrice(quote.pointsValue)}</span></div>
                 )}
                 <div className="flex justify-between text-xl font-bold pt-4 border-t mt-4 text-black">
                   <span>Total</span>
                   <span>{formatPrice(total)}</span>
                 </div>
+                {quote && quote.walletUsed > 0 && (
+                  <>
+                    <div className="flex justify-between text-gray-600"><span>Paid from wallet</span><span>-{formatPrice(quote.walletUsed)}</span></div>
+                    <div className="flex justify-between font-semibold text-black"><span>To pay</span><span>{formatPrice(amountDue)}</span></div>
+                  </>
+                )}
+                {quote?.notices.map((n) => <p key={n} className="text-xs text-gray-500">{n}</p>)}
+                {quote && quote.pointsEarned > 0 && <p className="text-xs text-gray-500">You will earn {quote.pointsEarned} loyalty points when this order is delivered.</p>}
+                {quote?.referredBy && <p className="text-xs text-gray-500">Shopping with {quote.referredBy}, Azeeora Brand Partner.</p>}
               </div>
               
               <div className="mt-6 bg-green-50 text-green-700 p-4 rounded-xl text-sm flex items-start gap-2 border border-green-100">

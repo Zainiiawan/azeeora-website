@@ -33,12 +33,14 @@ const columns = [
       { name: 'New in', href: '/shop?sort=new' },
       { name: 'Collections', href: '/categories' },
       { name: 'Offers', href: '/offers' },
+      { name: 'Wholesale', href: '/business' },
     ],
   },
   {
     title: 'Azeeora',
     links: [
       { name: 'Our story', href: '/about' },
+      { name: 'Join us', href: '/join' },
       { name: 'Journal', href: '/blog' },
       { name: 'Careers', href: '/careers' },
       { name: 'Press', href: '/press' },

@@ -1,6 +1,6 @@
 import { api } from './axios';
 
-export type PaymentMethod = 'cod' | 'jazzcash' | 'easypaisa';
+export type PaymentMethod = 'cod' | 'jazzcash' | 'easypaisa' | 'wallet';
 
 export interface ShippingAddress {
   firstName: string;

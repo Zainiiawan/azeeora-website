@@ -1,7 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
+import RefCapture from '@/components/member/RefCapture';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
@@ -20,6 +21,9 @@ export function ConditionalSiteChrome({ children }: { children: React.ReactNode 
 
   return (
     <div className="maison bg-[var(--background)] text-[var(--foreground)] min-h-screen flex flex-col w-full">
+      <Suspense fallback={null}>
+        <RefCapture />
+      </Suspense>
       <Header />
       <main className="flex-1 pt-[92px] lg:pt-[112px]">{children}</main>
       <Footer />

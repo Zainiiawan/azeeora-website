@@ -13,6 +13,7 @@ import { RootState } from '@/store';
 import { cartApi } from '@/lib/api/cartApi';
 import { wishlistApi } from '@/lib/api/wishlistApi';
 import { Product } from '@/lib/api/productApi';
+import { useMemberPrice } from '@/lib/member/useMemberPrice';
 
 interface ProductCardProps {
   product: Pick<
@@ -108,6 +109,7 @@ const ProductCard = ({ product, className, priority = false }: ProductCardProps)
         : '';
 
   const onSale = product.basePrice > effectivePrice;
+  const memberPrice = useMemberPrice(product._id, effectivePrice);
   const badge = product.isComingSoon ? 'Coming soon' : discountDisplay || (product.isFeatured ? 'Bestseller' : '');
   const rating = Number(product.rating) || 0;
 
@@ -184,6 +186,11 @@ const ProductCard = ({ product, className, priority = false }: ProductCardProps)
           <span className={cn('font-medium', onSale ? 'text-sale' : 'text-ink')}>{formatPrice(effectivePrice)}</span>
           {onSale && <span className="ml-2.5 text-muted line-through font-light">{formatPrice(product.basePrice)}</span>}
         </p>
+        {memberPrice && (
+          <p className="mt-1 text-[0.8rem] text-rose">
+            {memberPrice.label}: <span className="font-medium">{formatPrice(memberPrice.price)}</span>
+          </p>
+        )}
       </div>
     </motion.article>
   );

@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { Minus, Plus } from 'lucide-react';
 import ProductSeoContent from '@/components/products/ProductSeoContent';
+import { useMemberPrice } from '@/lib/member/useMemberPrice';
 
 const PLACEHOLDER =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f4f4f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%23111111'%3EAZEEORA%3C/text%3E%3C/svg%3E";
@@ -31,6 +32,7 @@ export default function ProductPageClient({ initialProductData }: { initialProdu
   const [quantity, setQuantity] = useState(1);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const memberPrice = useMemberPrice(initialProductData?._id ?? '', initialProductData ? getEffectivePrice(initialProductData) : 0);
   const dispatch = useDispatch();
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
@@ -247,6 +249,12 @@ export default function ProductPageClient({ initialProductData }: { initialProdu
               <span className={cn('text-[1.7rem] font-medium', onSale ? 'text-sale' : 'text-ink')}>{formatPrice(effectivePrice)}</span>
               {onSale && <span className="text-[1.05rem] text-muted line-through font-light">{formatPrice(product.basePrice)}</span>}
             </p>
+
+            {memberPrice && (
+              <p className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-blush text-[0.9rem]">
+                {memberPrice.label}: <b className="font-medium">{formatPrice(memberPrice.price)}</b>
+              </p>
+            )}
 
             {product.shortDescription && <p className="mt-5 text-[0.98rem] text-gray-600 font-light leading-relaxed">{product.shortDescription}</p>}
 

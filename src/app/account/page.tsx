@@ -13,6 +13,7 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
+import AccountMemberPanel from '@/components/member/AccountMemberPanel';
 
 interface ProfileFormData {
   firstName: string;
@@ -96,6 +97,7 @@ export default function AccountPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        <AccountMemberPanel />
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className="lg:w-56">
             <nav className="bg-white rounded-xl shadow-sm p-4 space-y-1">

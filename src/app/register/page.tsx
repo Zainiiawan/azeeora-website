@@ -11,6 +11,7 @@ import { RootState } from '@/store';
 import { useRouter } from 'next/navigation';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { getRef } from '@/lib/member/referral';
 
 interface RegisterFormData {
   firstName: string;
@@ -48,16 +49,19 @@ export default function RegisterPage() {
     setFormError('');
     dispatch(clearError());
     const { terms: _terms, ...registerData } = data;
-    const result = await dispatch(registerUser(registerData) as any);
+    const refCode = getRef();
+    const result = await dispatch(registerUser({ ...registerData, ...(refCode ? { refCode } : {}) }) as any);
+    const next = new URLSearchParams(window.location.search).get('redirect');
+    const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '';
 
     if (registerUser.fulfilled.match(result)) {
       const payload = result.payload;
       if (payload?.requiresOtp && payload?.email) {
-        router.push(`/verify-otp?email=${encodeURIComponent(payload.email)}`);
+        router.push(`/verify-otp?email=${encodeURIComponent(payload.email)}${safeNext ? `&redirect=${encodeURIComponent(safeNext)}` : ''}`);
         return;
       }
       if (payload?.tokens) {
-        router.replace('/');
+        router.replace(safeNext || '/');
         return;
       }
     }

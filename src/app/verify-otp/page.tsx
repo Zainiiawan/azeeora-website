@@ -19,6 +19,8 @@ function VerifyOtpForm() {
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const email = searchParams.get('email') ?? '';
+  const nextParam = searchParams.get('redirect');
+  const next = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '/';
 
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [isVerifying, setIsVerifying] = useState(false);
@@ -98,7 +100,7 @@ function VerifyOtpForm() {
           })
         );
         setSuccess('Email verified! Redirecting...');
-        setTimeout(() => router.replace('/'), 1000);
+        setTimeout(() => router.replace(next), 1000);
       }
     } catch (err: any) {
       const msg =

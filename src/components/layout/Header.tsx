@@ -67,11 +67,14 @@ const Header = () => {
     { name: 'Shop all', href: '/shop' },
     ...categories.slice(0, 5).map((c) => ({ name: displayName(c.name), href: `/categories/${c.slug}` })),
     { name: 'Offers', href: '/offers' },
+    { name: 'Join us', href: '/join' },
+    { name: 'Wholesale', href: '/business' },
     { name: 'Journal', href: '/blog' },
   ];
 
   const topLinks = [
     { name: 'Offers', href: '/offers' },
+    { name: 'Join us', href: '/join' },
     { name: 'Journal', href: '/blog' },
   ];
 
@@ -174,6 +177,12 @@ const Header = () => {
                 </li>
                 <li>
                   <Link href="/categories" className="text-[0.95rem] text-ink hover:underline underline-offset-4">All categories</Link>
+                </li>
+                <li className="pt-3 border-t border-line">
+                  <Link href="/join" className="text-[0.95rem] text-ink hover:underline underline-offset-4">Become a Brand Partner</Link>
+                </li>
+                <li>
+                  <Link href="/business" className="text-[0.95rem] text-ink hover:underline underline-offset-4">Wholesale for business</Link>
                 </li>
               </ul>
               <div className="flex gap-10">
