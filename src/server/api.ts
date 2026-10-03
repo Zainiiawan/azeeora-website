@@ -6,6 +6,7 @@ import { orders, payments } from './routes/orders';
 import { reviews, coupons, users, notifications, contact, analytics, shipping, settings } from './routes/admin';
 import { media } from './routes/media';
 import { members } from './routes/members';
+import { campaigns, incentives, trainings, pickupPoints, warehouse, reports } from './routes/extras';
 
 /** Every endpoint of the old Express API, mounted under /api. */
 export const api = new Router();
@@ -27,3 +28,9 @@ api.use('/contact', contact);
 api.use('/shipping', shipping);
 api.use('/settings', settings);
 api.use('/members', members);
+api.use('/campaigns', campaigns);
+api.use('/incentives', incentives);
+api.use('/trainings', trainings);
+api.use('/pickup-points', pickupPoints);
+api.use('/warehouse', warehouse);
+api.use('/reports', reports);

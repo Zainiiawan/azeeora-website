@@ -68,6 +68,7 @@ const checkoutSchema = z.object({
   refCode: z.string().max(20).optional(),
   walletAmount: z.number().min(0).optional(),
   pointsToRedeem: z.number().min(0).optional(),
+  pickupPointId: z.string().optional(),
   notes: z.string().max(500).optional(),
   guestInfo: z
     .object({ firstName: z.string().min(1), lastName: z.string().min(1), email: z.string().email(), phone: z.string().min(1) })
@@ -146,6 +147,7 @@ async function buildQuote(input: {
   refCode?: string;
   walletAmount?: number;
   pointsToRedeem?: number;
+  pickupPointId?: string;
 }) {
   const settings = await getSettings();
   const ms = await getMemberSettings();
@@ -202,6 +204,12 @@ async function buildQuote(input: {
     shippingCost = null;
   }
   if (subtotal >= settings.freeShippingThreshold) shippingCost = 0;
+  let pickupPoint: Doc | null = null;
+  if (input.pickupPointId) {
+    pickupPoint = await db.pickupPoints.findById(input.pickupPointId);
+    if (!pickupPoint || pickupPoint.isActive === false) throw new BadRequestError('That pickup point is not available');
+    shippingCost = 0;
+  }
 
   // Coupon
   let discount = 0;
@@ -286,6 +294,7 @@ async function buildQuote(input: {
     commission,
     commissionPct: ms.referralCommissionPct,
     settings: ms,
+    pickupPoint,
   };
 }
 
@@ -296,6 +305,7 @@ const quoteSchema = z.object({
   refCode: z.string().max(20).optional(),
   walletAmount: z.number().min(0).optional(),
   pointsToRedeem: z.number().min(0).optional(),
+  pickupPointId: z.string().optional(),
 });
 
 async function linesFor(body: { items?: QuoteLine[] }, userId?: string) {
@@ -309,7 +319,7 @@ async function linesFor(body: { items?: QuoteLine[] }, userId?: string) {
 
 orders.post('/quote', optionalAuthenticate, validate(quoteSchema), async ({ body, user }) => {
   const { lines } = await linesFor(body, user?._id);
-  const q = await buildQuote({ user, lines, couponCode: body.couponCode, city: body.city, refCode: body.refCode, walletAmount: body.walletAmount, pointsToRedeem: body.pointsToRedeem });
+  const q = await buildQuote({ user, lines, couponCode: body.couponCode, city: body.city, refCode: body.refCode, walletAmount: body.walletAmount, pointsToRedeem: body.pointsToRedeem, pickupPointId: body.pickupPointId });
   return json({
     success: true,
     message: 'Quote',
@@ -362,6 +372,7 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
     refCode: body.refCode,
     walletAmount: body.walletAmount,
     pointsToRedeem: body.pointsToRedeem,
+    pickupPointId: body.pickupPointId,
   });
   if (q.couponError && body.couponCode) throw new BadRequestError(q.couponError);
   const finalItems = q.items;
@@ -438,6 +449,8 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
     discount,
     manualDiscount: 0,
     pointsDiscount: q.pointsValue,
+    deliveryMethod: q.pickupPoint ? 'pickup' : 'home',
+    pickupPoint: q.pickupPoint ? { _id: q.pickupPoint._id, name: q.pickupPoint.name, city: q.pickupPoint.city, address: q.pickupPoint.address, phone: q.pickupPoint.phone } : undefined,
     walletUsed: q.walletUsed,
     amountDue: q.amountDue,
     tax,
@@ -725,9 +738,10 @@ orders.patch('/:orderId/admin-edit', adminOnly, validate(adminEditSchema), async
   return json({ success: true, message: 'Order updated successfully', data: order });
 });
 
-orders.patch('/:orderId/status', adminOnly, validate(updateOrderStatusSchema), async ({ params, body }) => {
+/** Change an order's status with all side effects (stock, emails, notifications, commissions). Used by admin and warehouse. */
+export async function applyOrderStatus(orderId: string, body: z.infer<typeof updateOrderStatusSchema>, extra: Record<string, unknown> = {}) {
   const { status, message, trackingNumber, courierName, trackingUrl, estimatedDelivery, dispatchedAt, location } = body;
-  const order = await db.orders.findById(params.orderId);
+  const order = await db.orders.findById(orderId);
   if (!order) throw new NotFoundError('Order');
 
   const previousStatus = order.status;
@@ -735,6 +749,7 @@ orders.patch('/:orderId/status', adminOnly, validate(updateOrderStatusSchema), a
   const codApproval = order.paymentMethod === 'cod' && order.status === 'pending_confirmation' && status === 'processing';
 
   order.status = status;
+  Object.assign(order, extra);
   order.trackingHistory = [
     ...(order.trackingHistory ?? []),
     {
@@ -795,6 +810,11 @@ orders.patch('/:orderId/status', adminOnly, validate(updateOrderStatusSchema), a
     }
   }
 
+  return order;
+}
+
+orders.patch('/:orderId/status', adminOnly, validate(updateOrderStatusSchema), async ({ params, body }) => {
+  const order = await applyOrderStatus(params.orderId, body);
   return json({ success: true, message: 'Order status updated', data: order });
 });
 

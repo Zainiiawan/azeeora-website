@@ -49,7 +49,7 @@ export type AuthUser = Doc & {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'admin' | 'warehouse';
   isEmailVerified: boolean;
   isActive: boolean;
 };
@@ -119,7 +119,7 @@ export const optionalAuthenticate: Middleware = async (ctx) => {
 };
 
 export const authorize =
-  (...roles: Array<'admin' | 'customer'>): Middleware =>
+  (...roles: Array<'admin' | 'customer' | 'warehouse'>): Middleware =>
   (ctx) => {
     if (!ctx.user) throw new UnauthorizedError('Authentication required.');
     if (!roles.includes(ctx.user.role)) {
@@ -128,6 +128,7 @@ export const authorize =
   };
 
 export const adminOnly: Middleware[] = [authenticate, authorize('admin')];
+export const staffOnly: Middleware[] = [authenticate, authorize('admin', 'warehouse')];
 
 export const requireEmailVerification: Middleware = (ctx) => {
   if (!ctx.user?.isEmailVerified) {

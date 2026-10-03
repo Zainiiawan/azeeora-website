@@ -248,7 +248,7 @@ users.get('/', adminOnly, async ({ query }) => {
   return json({ success: true, message: 'Users fetched', data: { users: data, pagination: { page, limit, total, totalPages } } });
 });
 
-users.patch('/:userId/role', adminOnly, validate(z.object({ role: z.enum(['admin', 'customer']) })), async ({ params, body }) => {
+users.patch('/:userId/role', adminOnly, validate(z.object({ role: z.enum(['admin', 'customer', 'warehouse']) })), async ({ params, body }) => {
   const user = await db.users.updateById(params.userId, { role: body.role });
   if (!user) throw new NotFoundError('User');
   return json({ success: true, message: 'Role updated', data: publicUser(user) });
