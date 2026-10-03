@@ -1,26 +1,26 @@
 @import "tailwindcss";
 
 /*
-  AZEEORA design system.
-  Modelled on how the fashion-house beauty sites actually look: a white canvas,
-  near-black type, one warm grey for product tiles, hairline rules, and the
-  photography carrying all of the colour. No gradients, no glows, no tints.
-
-  The old token names (rose-gold*) are kept so every legacy page that uses
-  them turns monochrome automatically.
+  AZEEORA design system, after the Oriflame storefront: a white canvas, a light
+  geometric sans (Jost, a Futura cut) for everything, soft grey product tiles,
+  pill buttons, round icon buttons, a thin brand-colour strip on top and a
+  dark footer. Colour comes from the photography and the logo's rose gold.
 */
 :root {
   --background: #ffffff;
-  --foreground: #111111;
-  --ink: #111111;
-  --muted: #6e6e6e;
-  --line: #e6e6e6;
-  --tile: #f3f2ef;              /* product tile / quiet surface */
+  --foreground: #1a1a1a;
+  --ink: #1a1a1a;
+  --muted: #6f6f6f;
+  --line: #e5e5e5;
+  --tile: #f4f4f4;              /* product tile / quiet surface */
+  --blush: #ecdcd6;             /* top strip, soft panels */
+  --rose: #b07f77;              /* logo rose gold, accents */
+  --sale: #d2342b;              /* sale prices */
 
-  --rose-gold: #111111;         /* "accent" is ink */
-  --rose-gold-light: #f3f2ef;
+  --rose-gold: #1a1a1a;
+  --rose-gold-light: #f4f4f4;
   --rose-gold-dark: #000000;
-  --black: #111111;
+  --black: #1a1a1a;
   --white: #ffffff;
 
   --gray-50: #fafafa;
@@ -50,6 +50,9 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-tile: var(--tile);
+  --color-blush: var(--blush);
+  --color-rose: var(--rose);
+  --color-sale: var(--sale);
   --color-rose-gold: var(--rose-gold);
   --color-rose-gold-light: var(--rose-gold-light);
   --color-rose-gold-dark: var(--rose-gold-dark);
@@ -96,8 +99,8 @@ body {
 @layer base {
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans);
-    font-weight: 400;
-    letter-spacing: 0.01em;
+    font-weight: 300;
+    letter-spacing: 0;
     line-height: 1.15;
     color: var(--foreground);
   }
@@ -107,17 +110,17 @@ body {
 }
 
 ::selection {
-  background: #111111;
-  color: #ffffff;
+  background: #ecdcd6;
+  color: #1a1a1a;
 }
 
 @layer components {
   /* Small capitals: nav, labels, buttons. Modest tracking, like the houses use. */
   .caps {
     font-family: var(--font-sans);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 400;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
   .caps-sm {
@@ -127,20 +130,19 @@ body {
     letter-spacing: 0.14em;
     text-transform: uppercase;
   }
-  /* Uppercase titles set in the sans */
+  /* Section and page titles: large, light, sentence case */
   .title {
     font-family: var(--font-sans);
-    font-weight: 400;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    line-height: 1.05;
-  }
-  /* Editorial serif, used sparingly */
-  .editorial {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    letter-spacing: -0.005em;
+    font-weight: 300;
+    letter-spacing: -0.01em;
     line-height: 1.1;
+  }
+  /* Large statement copy (same family, lighter) */
+  .editorial {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    letter-spacing: -0.015em;
+    line-height: 1.12;
   }
 
   .btn-ink {
@@ -149,11 +151,13 @@ body {
     justify-content: center;
     gap: 0.6rem;
     min-height: 3rem;
-    padding: 0 2rem;
-    background: #111111;
+    padding: 0 2.25rem;
+    border-radius: 999px;
+    background: #1a1a1a;
     color: #ffffff;
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
   }
@@ -166,11 +170,13 @@ body {
     justify-content: center;
     gap: 0.6rem;
     min-height: 3rem;
-    padding: 0 2rem;
-    border: 1px solid #111111;
-    color: #111111;
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
+    padding: 0 2.25rem;
+    border-radius: 999px;
+    border: 1px solid #1a1a1a;
+    color: #1a1a1a;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
@@ -203,6 +209,69 @@ body {
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     backdrop-filter: blur(16px) saturate(140%);
   }
+
+  /* Header text navigation */
+  .nav-link {
+    font-size: 0.95rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.4rem 0;
+    border-bottom: 1.5px solid transparent;
+    transition: border-color 0.25s ease;
+  }
+  .nav-link:hover,
+  .nav-link-active { border-bottom-color: #1a1a1a; }
+
+  /* Count bubble on header icons */
+  .count-dot {
+    position: absolute;
+    top: -2px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--rose);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 500;
+    line-height: 18px;
+    text-align: center;
+  }
+
+  /* White pill used over photography */
+  .btn-white {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0 2.25rem;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #1a1a1a;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: background-color 0.3s ease;
+  }
+  .btn-white:hover { background: #f1f1f1; }
+
+  /* Round white icon button on product tiles */
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #1a1a1a;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+  .icon-btn:hover { background: #1a1a1a; color: #ffffff; }
 
   .reveal-img {
     transition: transform 1.4s var(--ease-lux), opacity 0.6s ease;
@@ -239,6 +308,8 @@ input[type='range'] {
   accent-color: #111111;
 }
 
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cfcfcf; border-radius: 999px; }
@@ -293,11 +364,11 @@ input[type='range'] {
   border-radius: 0;
 }
 /* Older pages set big bold serif headings; bring them in line */
-.maison h1.font-serif, .maison h2.font-serif, .maison h3.font-serif {
+.maison .font-serif {
   font-family: var(--font-sans);
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+}
+.maison h1.font-serif, .maison h2.font-serif, .maison h3.font-serif {
+  font-weight: 300;
 }
 .maison h4.font-bold, .maison h3.font-bold, .maison h2.font-bold, .maison h1.font-bold,
 .maison h3.font-semibold, .maison h2.font-semibold {

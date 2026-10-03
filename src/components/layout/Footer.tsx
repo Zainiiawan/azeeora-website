@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import NewsletterForm from './NewsletterForm';
-import Wordmark from '@/components/brand/Wordmark';
 import { STORE_CONTACT } from '@/shared/constants';
 
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -67,15 +66,15 @@ const Footer = ({ className }: { className?: string }) => {
   const year = new Date().getFullYear();
 
   return (
-    <footer className={`bg-tile text-ink ${className || ''}`}>
+    <footer className={`bg-[#1a1a1a] text-white mt-10 ${className || ''}`}>
       <div className="px-5 sm:px-8 lg:px-10 pt-16 pb-12 grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-12">
         <div className="col-span-2 lg:col-span-6">
-          <p className="caps mb-3">Stay in the know</p>
-          <p className="text-sm text-gray-600 mb-6 max-w-sm">New launches, rituals and private offers, a few times a season.</p>
+          <p className="text-[1.5rem] font-light mb-3">Stay in the know</p>
+          <p className="text-sm text-white/70 font-light mb-6 max-w-sm">New launches, rituals and private offers, a few times a season.</p>
           <NewsletterForm />
-          <div className="flex gap-5 mt-10">
+          <div className="flex gap-3 mt-10">
             {socials.map(({ label, href, Icon }) => (
-              <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="text-ink hover:text-muted transition-colors">
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="w-10 h-10 rounded-full border border-white/30 flex items-center justify-center text-white hover:bg-white hover:text-ink transition-colors">
                 <Icon className="w-[18px] h-[18px]" />
               </a>
             ))}
@@ -84,11 +83,11 @@ const Footer = ({ className }: { className?: string }) => {
 
         {columns.map((col) => (
           <div key={col.title} className="lg:col-span-2 lg:col-start-auto">
-            <p className="caps text-muted mb-5">{col.title}</p>
-            <ul className="space-y-2.5">
+            <p className="text-[0.95rem] uppercase tracking-[0.06em] text-white mb-5">{col.title}</p>
+            <ul className="space-y-3">
               {col.links.map((link) => (
                 <li key={link.name}>
-                  <Link href={link.href} className="caps u-hover">
+                  <Link href={link.href} className="text-[0.92rem] font-light text-white/70 hover:text-white transition-colors">
                     {link.name}
                   </Link>
                 </li>
@@ -98,20 +97,21 @@ const Footer = ({ className }: { className?: string }) => {
         ))}
       </div>
 
-      <div className="px-5 sm:px-8 lg:px-10 pb-8 flex flex-wrap gap-x-8 gap-y-2 caps-sm text-muted">
+      <div className="px-5 sm:px-8 lg:px-10 pb-10 flex flex-wrap gap-x-8 gap-y-2 text-[0.85rem] font-light text-white/60">
         <span>{STORE_CONTACT.address}</span>
-        <a href="tel:+923060466911" className="hover:text-ink">{STORE_CONTACT.phone}</a>
-        <a href={`mailto:${STORE_CONTACT.email}`} className="hover:text-ink normal-case tracking-normal text-[0.72rem]">{STORE_CONTACT.email}</a>
+        <a href="tel:+923060466911" className="hover:text-white">{STORE_CONTACT.phone}</a>
+        <a href={`mailto:${STORE_CONTACT.email}`} className="hover:text-white">{STORE_CONTACT.email}</a>
         <span>{STORE_CONTACT.businessHours}</span>
       </div>
 
       {/* Wordmark across the foot of every page */}
-      <div className="px-4 sm:px-8 lg:px-10 pt-6 pb-4 border-t border-line flex justify-center overflow-hidden">
-        <Wordmark className="text-[14vw] lg:text-[10vw]" showSubline={false} />
+      <div className="px-5 sm:px-8 lg:px-10 py-8 border-t border-white/15 flex justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/azeeora-logo-white.svg" alt="Azeeora" width={1114} height={218} className="h-9 lg:h-11 w-auto" />
       </div>
 
-      <div className="px-5 sm:px-8 lg:px-10 py-5 border-t border-line flex flex-col md:flex-row justify-between items-center gap-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-        <p className="caps-sm text-muted">© {year} Azeeora Cosmetics</p>
+      <div className="px-5 sm:px-8 lg:px-10 py-5 border-t border-white/15 flex flex-col md:flex-row justify-between items-center gap-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <p className="text-[0.8rem] font-light text-white/60">© {year} Azeeora Cosmetics</p>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           {[
             ['Privacy', '/privacy'],
@@ -120,7 +120,7 @@ const Footer = ({ className }: { className?: string }) => {
             ['Returns', '/refunds'],
             ['Cookies', '/cookies'],
           ].map(([name, href]) => (
-            <Link key={href} href={href} className="caps-sm text-muted hover:text-ink transition-colors">
+            <Link key={href} href={href} className="text-[0.8rem] font-light text-white/60 hover:text-white transition-colors">
               {name}
             </Link>
           ))}

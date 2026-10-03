@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { m as motion } from 'framer-motion';
-import { Heart, Share2, Check } from 'lucide-react';
+import { Heart, Share2, Check, Star, Truck, Banknote, RotateCcw } from 'lucide-react';
 import { cn, displayName, formatPrice, optimizeCloudinaryUrl } from '@/lib/utils';
 import { getDiscountDisplay, getEffectivePrice } from '@/lib/productUtils';
 import Button from '@/components/ui/Button';
@@ -22,7 +22,7 @@ import { Minus, Plus } from 'lucide-react';
 import ProductSeoContent from '@/components/products/ProductSeoContent';
 
 const PLACEHOLDER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f3f2ef'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%23111111'%3EAZEEORA%3C/text%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f4f4f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%23111111'%3EAZEEORA%3C/text%3E%3C/svg%3E";
 
 export default function ProductPageClient({ initialProductData }: { initialProductData?: any }) {
   const params = useParams();
@@ -30,6 +30,7 @@ export default function ProductPageClient({ initialProductData }: { initialProdu
   const slug = params?.slug as string;
   const [quantity, setQuantity] = useState(1);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const dispatch = useDispatch();
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
@@ -152,103 +153,137 @@ export default function ProductPageClient({ initialProductData }: { initialProdu
   const categorySlug = typeof product.category === 'object' ? product.category?.slug : undefined;
   const lowStock = inStock && product.stock <= (product.lowStockThreshold ?? 5);
 
+  const onSale = product.basePrice > effectivePrice;
+  const rating = Number(product.rating) || 0;
+  const media: { type: 'video' | 'image'; url: string; alt?: string }[] = [
+    ...images.map((img: { url?: string; alt?: string }) => ({ type: 'image' as const, url: img.url || PLACEHOLDER, alt: img.alt })),
+    ...(product.video ? [{ type: 'video' as const, url: product.video.url }] : []),
+  ];
+  const current = media[Math.min(activeIndex, media.length - 1)];
+
   return (
     <div className="bg-white">
-      <div className="grid lg:grid-cols-12 border-b border-line">
-        {/* Gallery: stacked full-height images on desktop, swipeable on mobile */}
-        <div className="lg:col-span-7 xl:col-span-8 bg-tile">
-          <div className="flex lg:flex-col overflow-x-auto lg:overflow-visible snap-x snap-mandatory lg:snap-none">
-            {product.video && (
-              <div className="relative shrink-0 w-full aspect-[3/4] lg:aspect-[4/5] snap-start">
-                <video src={product.video.url} className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop playsInline />
+      <div className="px-4 sm:px-6 lg:px-11 pt-5 lg:pt-7 pb-14 lg:pb-20">
+        <nav className="text-[0.8rem] text-muted flex flex-wrap gap-2 mb-5 lg:mb-8" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-ink">Home</Link>
+          <span>/</span>
+          <Link href="/shop" className="hover:text-ink">Shop</Link>
+          {categoryName && categorySlug && (
+            <>
+              <span>/</span>
+              <Link href={`/categories/${categorySlug}`} className="hover:text-ink">{categoryName}</Link>
+            </>
+          )}
+          <span>/</span>
+          <span className="text-ink">{product.name}</span>
+        </nav>
+
+        <div className="grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-8 lg:gap-14 xl:gap-20">
+          {/* Gallery: thumbnails + main tile */}
+          <div className="flex flex-col-reverse lg:flex-row gap-3 lg:gap-4 lg:self-start lg:sticky lg:top-[136px]">
+            {media.length > 1 && (
+              <div className="flex lg:flex-col gap-2.5 overflow-x-auto no-scrollbar">
+                {media.map((m, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveIndex(i)}
+                    aria-label={`Show ${m.type} ${i + 1}`}
+                    className={cn('shrink-0 w-[68px] h-[68px] lg:w-[84px] lg:h-[84px] bg-tile overflow-hidden border-2 transition-colors', i === activeIndex ? 'border-ink' : 'border-transparent')}
+                  >
+                    {m.type === 'image' ? (
+                      <img src={optimizeCloudinaryUrl(m.url, 200)} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="w-full h-full flex items-center justify-center text-[0.7rem] uppercase">Video</span>
+                    )}
+                  </button>
+                ))}
               </div>
             )}
-            {images.map((image: { url?: string; alt?: string }, index: number) => (
-              <div key={index} className="relative shrink-0 w-full aspect-[3/4] lg:aspect-[4/5] snap-start">
-                <img
-                  src={image.url ? optimizeCloudinaryUrl(image.url, 1800) : PLACEHOLDER}
-                  alt={image.alt || product.name}
+            <div className="relative flex-1 bg-tile aspect-square overflow-hidden">
+              {current?.type === 'video' ? (
+                <video src={current.url} className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop playsInline />
+              ) : (
+                <motion.img
+                  key={current?.url}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4 }}
+                  src={current?.url ? optimizeCloudinaryUrl(current.url, 1600) : PLACEHOLDER}
+                  alt={current?.alt || product.name}
                   className="absolute inset-0 w-full h-full object-cover"
-                  loading={index === 0 ? 'eager' : 'lazy'}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = PLACEHOLDER;
                   }}
                 />
-              </div>
-            ))}
+              )}
+              {(discountDisplay || product.isComingSoon) && (
+                <span className={cn('absolute top-4 left-4 bg-white px-3 py-1.5 text-[0.75rem] font-medium uppercase', product.isComingSoon ? 'text-ink' : 'text-sale')}>
+                  {product.isComingSoon ? 'Coming soon' : discountDisplay}
+                </span>
+              )}
+              <button onClick={handleWishlist} className="icon-btn absolute top-4 right-4" aria-pressed={isWishlisted} aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}>
+                <Heart className={cn('w-[19px] h-[19px]', isWishlisted && 'fill-current text-sale')} strokeWidth={1.4} />
+              </button>
+            </div>
           </div>
-          {images.length + (product.video ? 1 : 0) > 1 && (
-            <p className="lg:hidden caps-sm text-muted text-center py-3 bg-white">Swipe for more</p>
-          )}
-        </div>
 
-        {/* Details */}
-        <aside className="lg:col-span-5 xl:col-span-4">
-          <div className="lg:sticky lg:top-[148px] px-5 sm:px-8 lg:px-10 xl:px-12 py-10 lg:py-14">
-            <nav className="caps-sm text-muted flex flex-wrap gap-2 mb-10" aria-label="Breadcrumb">
-              <Link href="/shop" className="hover:text-ink">Shop</Link>
-              {categoryName && categorySlug && (
-                <>
-                  <span>/</span>
-                  <Link href={`/categories/${categorySlug}`} className="hover:text-ink">{categoryName}</Link>
-                </>
-              )}
-            </nav>
+          {/* Details */}
+          <div className="lg:pt-2">
+            {(brandName || categoryName) && <p className="caps-sm text-muted mb-2">{brandName || categoryName}</p>}
+            <h1 className="font-light text-[1.8rem] sm:text-[2.3rem] leading-tight text-ink">{product.name}</h1>
 
-            {(brandName || categoryName) && <p className="caps text-muted mb-3">{brandName || categoryName}</p>}
-            <h1 className="title text-[1.9rem] sm:text-[2.2rem] text-ink">{product.name}</h1>
+            <a href="#reviews" className="mt-3 inline-flex items-center gap-2 text-[0.85rem] text-ink">
+              <span className="flex">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star key={n} className={cn('w-4 h-4', n <= Math.round(rating) ? 'fill-current' : 'text-gray-300')} strokeWidth={1} />
+                ))}
+              </span>
+              <span className="underline underline-offset-4">
+                {product.reviewCount > 0 ? `${product.reviewCount} review${product.reviewCount === 1 ? '' : 's'}` : 'Write a review'}
+              </span>
+            </a>
 
-            <p className="mt-4 text-base tracking-wide text-ink">
-              {formatPrice(effectivePrice)}
-              {product.basePrice > effectivePrice && (
-                <span className="ml-3 text-muted line-through">{formatPrice(product.basePrice)}</span>
-              )}
-              {discountDisplay && !product.isComingSoon && <span className="ml-3 caps-sm text-muted">{discountDisplay}</span>}
+            <p className="mt-6 flex items-baseline gap-3">
+              <span className={cn('text-[1.7rem] font-medium', onSale ? 'text-sale' : 'text-ink')}>{formatPrice(effectivePrice)}</span>
+              {onSale && <span className="text-[1.05rem] text-muted line-through font-light">{formatPrice(product.basePrice)}</span>}
             </p>
 
-            {product.reviewCount > 0 && (
-              <a href="#reviews" className="mt-3 inline-block text-[0.8rem] text-muted u-hover">
-                ★ {Number(product.rating).toFixed(1)} · {product.reviewCount} review{product.reviewCount === 1 ? '' : 's'}
-              </a>
-            )}
+            {product.shortDescription && <p className="mt-5 text-[0.98rem] text-gray-600 font-light leading-relaxed">{product.shortDescription}</p>}
 
-            {product.shortDescription && <p className="mt-8 text-[0.95rem] text-gray-600 leading-relaxed">{product.shortDescription}</p>}
-
-            <div className="mt-10">
+            <div className="mt-8">
               {product.isComingSoon ? (
                 <>
                   <button disabled className="btn-ink w-full">Coming soon</button>
                   {product.launchDate && (
-                    <p className="mt-3 text-center caps-sm text-muted">
+                    <p className="mt-3 text-center text-[0.85rem] text-muted">
                       Expected {new Date(product.launchDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <div className="flex items-center justify-between border-y border-line py-3 mb-4">
-                    <span className="caps text-muted">Quantity</span>
-                    <div className="flex items-center gap-5">
-                      <button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Decrease quantity" className="p-1">
-                        <Minus className="w-3.5 h-3.5" strokeWidth={1.2} />
+                  <div className="flex gap-3">
+                    <div className="flex items-center justify-between h-12 w-[130px] shrink-0 rounded-full border border-line px-2">
+                      <button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Decrease quantity" className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-tile">
+                        <Minus className="w-4 h-4" strokeWidth={1.4} />
                       </button>
-                      <span className="w-6 text-center text-sm" aria-live="polite">{quantity}</span>
-                      <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} aria-label="Increase quantity" className="p-1">
-                        <Plus className="w-3.5 h-3.5" strokeWidth={1.2} />
+                      <span className="text-[0.95rem]" aria-live="polite">{quantity}</span>
+                      <button onClick={() => setQuantity(Math.min(product.stock, quantity + 1))} aria-label="Increase quantity" className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-tile">
+                        <Plus className="w-4 h-4" strokeWidth={1.4} />
                       </button>
                     </div>
+                    <button onClick={handleAddToCart} disabled={!inStock} className="btn-ink flex-1">
+                      {isAddedToCart ? (
+                        <>
+                          <Check className="w-4 h-4" strokeWidth={1.6} /> Added to bag
+                        </>
+                      ) : inStock ? (
+                        'Add to bag'
+                      ) : (
+                        'Out of stock'
+                      )}
+                    </button>
                   </div>
-                  <button onClick={handleAddToCart} disabled={!inStock} className="btn-ink w-full">
-                    {isAddedToCart ? (
-                      <>
-                        <Check className="w-4 h-4" strokeWidth={1.4} /> Added to bag
-                      </>
-                    ) : inStock ? (
-                      'Add to bag'
-                    ) : (
-                      'Out of stock'
-                    )}
-                  </button>
                   <button
                     onClick={(e) => {
                       e.preventDefault();
@@ -259,50 +294,61 @@ export default function ProductPageClient({ initialProductData }: { initialProdu
                   >
                     Buy now
                   </button>
-                  <p className="mt-4 caps-sm text-muted text-center">
-                    {lowStock ? `Only ${product.stock} left` : inStock ? 'In stock · Ships in 1-2 days' : 'Currently unavailable'}
+                  <p className={cn('mt-4 text-[0.85rem] flex items-center gap-2', inStock ? 'text-[#2f7d4f]' : 'text-sale')}>
+                    <span className={cn('w-2 h-2 rounded-full', inStock ? 'bg-[#2f7d4f]' : 'bg-sale')} />
+                    {lowStock ? `Only ${product.stock} left` : inStock ? 'In stock, ships in 1-2 days' : 'Currently unavailable'}
                   </p>
                 </>
               )}
             </div>
 
-            <div className="mt-8 flex justify-center gap-10">
-              <button onClick={handleWishlist} className="caps flex items-center gap-2 u-hover" aria-pressed={isWishlisted}>
-                <Heart className={cn('w-3.5 h-3.5', isWishlisted && 'fill-current')} strokeWidth={1.2} />
-                {isWishlisted ? 'Saved' : 'Save'}
-              </button>
-              <button onClick={handleShare} className="caps flex items-center gap-2 u-hover">
-                <Share2 className="w-3.5 h-3.5" strokeWidth={1.2} /> Share
-              </button>
-            </div>
+            <ul className="mt-8 grid grid-cols-3 gap-2 border-y border-line py-5 text-center">
+              {[
+                [Truck, 'Free delivery over PKR 5,000'],
+                [Banknote, 'Cash on delivery'],
+                [RotateCcw, '14-day returns'],
+              ].map(([Icon, text]) => {
+                const I = Icon as typeof Truck;
+                return (
+                  <li key={text as string} className="flex flex-col items-center gap-2 text-[0.78rem] text-ink font-light leading-snug">
+                    <I className="w-6 h-6" strokeWidth={1.2} />
+                    {text as string}
+                  </li>
+                );
+              })}
+            </ul>
 
-            <div className="mt-10 border-t border-line">
+            <div className="mt-2">
               <details className="group border-b border-line" open>
-                <summary className="flex items-center justify-between py-5 cursor-pointer list-none caps">
+                <summary className="flex items-center justify-between py-5 cursor-pointer list-none text-[0.95rem] uppercase tracking-[0.04em]">
                   Description
-                  <Plus className="w-3.5 h-3.5 transition-transform duration-300 group-open:rotate-45" strokeWidth={1.2} />
+                  <Plus className="w-4 h-4 transition-transform duration-300 group-open:rotate-45" strokeWidth={1.3} />
                 </summary>
-                <p className="pb-6 text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                  {product.description || 'Luxury cosmetics crafted for you.'}
+                <p className="pb-6 text-[0.95rem] text-gray-600 font-light leading-relaxed whitespace-pre-line">
+                  {product.description || 'Skincare made for you.'}
                 </p>
               </details>
               <details className="group border-b border-line">
-                <summary className="flex items-center justify-between py-5 cursor-pointer list-none caps">
+                <summary className="flex items-center justify-between py-5 cursor-pointer list-none text-[0.95rem] uppercase tracking-[0.04em]">
                   Delivery & returns
-                  <Plus className="w-3.5 h-3.5 transition-transform duration-300 group-open:rotate-45" strokeWidth={1.2} />
+                  <Plus className="w-4 h-4 transition-transform duration-300 group-open:rotate-45" strokeWidth={1.3} />
                 </summary>
-                <ul className="pb-6 space-y-2 text-sm text-gray-600 leading-relaxed">
-                  <li>Delivered in 3-5 working days across Pakistan. Complimentary over PKR 5,000.</li>
+                <ul className="pb-6 space-y-2 text-[0.95rem] text-gray-600 font-light leading-relaxed">
+                  <li>Delivered in 3-5 working days across Pakistan. Free over PKR 5,000.</li>
                   <li>Cash on delivery, JazzCash or Easypaisa.</li>
                   <li>
                     Returns accepted within 14 days.{' '}
-                    <Link href="/refunds" className="u-link text-ink">Read the policy</Link>
+                    <Link href="/refunds" className="underline underline-offset-4 text-ink">Read the policy</Link>
                   </li>
                 </ul>
               </details>
             </div>
+
+            <button onClick={handleShare} className="mt-6 inline-flex items-center gap-2 text-[0.85rem] text-ink underline underline-offset-4">
+              <Share2 className="w-4 h-4" strokeWidth={1.3} /> Share
+            </button>
           </div>
-        </aside>
+        </div>
       </div>
 
       <div className="px-5 sm:px-8">

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { m as motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Search, X, Menu } from 'lucide-react';
+import { Search, X, Menu, User, Heart, ShoppingBag } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import Wordmark from '@/components/brand/Wordmark';
@@ -30,25 +30,13 @@ const Header = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
 
   const { user, isAuthenticated } = useSelector((s: RootState) => s.auth);
   const bagCount = useSelector((s: RootState) => s.cart.items.reduce((n, i) => n + i.quantity, 0));
   const wishCount = useSelector((s: RootState) => s.wishlist.items.length);
 
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: categoryApi.getAll, staleTime: 5 * 60 * 1000 });
-
-  const isHome = pathname === '/';
-  // Over the homepage campaign image the bar is transparent with white type
-  const overImage = false;
-
-  useEffect(() => {
-    // on the homepage the giant wordmark opens the page; the header logo appears once it scrolls away
-    const onScroll = () => setScrolled(window.scrollY > (window.innerWidth >= 1024 ? 260 : 120));
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
@@ -63,6 +51,7 @@ const Header = () => {
     setLastPath(pathname);
     setMenuOpen(false);
     setSearchOpen(false);
+    setShopOpen(false);
   }
 
   const signOut = async () => {
@@ -81,89 +70,129 @@ const Header = () => {
     { name: 'Journal', href: '/blog' },
   ];
 
-  const ink = overImage ? 'text-white' : 'text-ink';
+  const topLinks = [
+    { name: 'Offers', href: '/offers' },
+    { name: 'Journal', href: '/blog' },
+  ];
+
+  const iconCls = 'w-[21px] h-[21px]';
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50">
-      {/* Service line */}
-      <div className="h-8 bg-tile text-ink flex items-center justify-center px-4">
-        <p className="caps-sm text-center truncate">Complimentary delivery across Pakistan on orders over PKR 5,000</p>
+    <header className="fixed inset-x-0 top-0 z-50" onMouseLeave={() => setShopOpen(false)}>
+      {/* Brand strip */}
+      <div className="h-8 bg-blush text-ink flex items-center justify-center px-4">
+        <p className="text-[0.72rem] tracking-[0.08em] uppercase text-center truncate">
+          <span className="sm:hidden">Free delivery over PKR 5,000</span>
+          <span className="hidden sm:inline">Free delivery across Pakistan on orders over PKR 5,000 · Cash on delivery</span>
+        </p>
       </div>
 
-      <div
-        className={cn(
-          'transition-colors duration-500',
-          overImage ? 'bg-transparent' : 'bg-white border-b border-line'
-        )}
-      >
-        {/* Main bar */}
-        <div className="h-[60px] lg:h-[72px] px-4 sm:px-6 lg:px-10 grid grid-cols-[1fr_auto_1fr] items-center">
-          <div className={cn('flex items-center gap-5 lg:gap-7', ink)}>
-            <button onClick={() => setMenuOpen(true)} className="flex items-center gap-2.5 caps" aria-label="Open menu">
-              <Menu className="w-[18px] h-[18px]" strokeWidth={1.2} />
-              <span className="hidden lg:inline">Menu</span>
+      <div className="bg-white border-b border-line">
+        <div className="h-[60px] lg:h-[80px] px-4 sm:px-6 lg:px-11 grid grid-cols-[auto_1fr_auto] lg:grid-cols-[1fr_auto_1fr] items-center gap-3">
+          {/* Left: menu + logo on phones, text navigation on desktop */}
+          <div className="flex items-center gap-4">
+            <button onClick={() => setMenuOpen(true)} className="lg:hidden text-ink -ml-1 p-1" aria-label="Open menu">
+              <Menu className="w-6 h-6" strokeWidth={1.3} />
             </button>
-            <button onClick={() => setSearchOpen((v) => !v)} className="flex items-center gap-2.5 caps" aria-label="Search">
-              <Search className="w-[17px] h-[17px]" strokeWidth={1.2} />
-              <span className="hidden lg:inline">Search</span>
-            </button>
+            <nav className="hidden lg:flex items-center gap-10 text-ink" aria-label="Main">
+              <button
+                type="button"
+                onMouseEnter={() => setShopOpen(true)}
+                onClick={() => setShopOpen((v) => !v)}
+                className={cn('nav-link', shopOpen && 'nav-link-active')}
+                aria-expanded={shopOpen}
+              >
+                Shop
+              </button>
+              {topLinks.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  onMouseEnter={() => setShopOpen(false)}
+                  className={cn('nav-link', pathname.startsWith(l.href) && 'nav-link-active')}
+                >
+                  {l.name}
+                </Link>
+              ))}
+            </nav>
           </div>
 
-          <Link
-            href="/"
-            aria-label="Azeeora home"
-            className={cn(
-              'transition-all duration-500',
-              ink,
-              // on the homepage the giant hero logo takes this role until you scroll
-              isHome && !scrolled && !menuOpen && !searchOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            )}
-          >
-            <Wordmark className="text-[19px] lg:text-[25px]" showSubline={false} priority />
+          <Link href="/" aria-label="Azeeora home" className="justify-self-start lg:justify-self-center">
+            <Wordmark className="text-[21px] lg:text-[27px]" showSubline={false} priority />
           </Link>
 
-          <div className={cn('flex items-center justify-end gap-5 lg:gap-7', ink)}>
-            <Link href={isAuthenticated ? '/account' : '/login'} className="hidden lg:inline caps u-hover">
-              {isAuthenticated && user ? user.firstName : 'Sign in'}
-            </Link>
+          {/* Right: icons */}
+          <div className="flex items-center justify-end gap-3.5 sm:gap-5 lg:gap-7 text-ink">
             {isAuthenticated && user?.role === 'admin' && (
-              <Link href="/admin" className="hidden lg:inline caps u-hover">
+              <Link href="/admin" className="hidden lg:inline nav-link">
                 Admin
               </Link>
             )}
-            <Link href="/wishlist" className="hidden lg:inline caps u-hover">
-              Wishlist{wishCount > 0 ? ` (${wishCount})` : ''}
-            </Link>
+            <button onClick={() => setSearchOpen((v) => !v)} aria-label="Search" className="p-1">
+              <Search className={iconCls} strokeWidth={1.3} />
+            </button>
             {isAuthenticated && (
               <span className="hidden lg:inline-flex">
                 <NotificationBell />
               </span>
             )}
-            <Link href="/cart" className="caps u-hover" aria-label={`Bag, ${bagCount} items`}>
-              Bag ({bagCount})
+            <Link href={isAuthenticated ? '/account' : '/login'} aria-label={isAuthenticated ? 'My account' : 'Sign in'} className="p-1">
+              <User className={iconCls} strokeWidth={1.3} />
+            </Link>
+            <Link href="/wishlist" aria-label={`Wishlist, ${wishCount} items`} className="relative p-1 hidden sm:inline-flex">
+              <Heart className={iconCls} strokeWidth={1.3} />
+              {wishCount > 0 && <span className="count-dot">{wishCount}</span>}
+            </Link>
+            <Link href="/cart" aria-label={`Bag, ${bagCount} items`} className="relative p-1">
+              <ShoppingBag className={iconCls} strokeWidth={1.3} />
+              {bagCount > 0 && <span className="count-dot">{bagCount}</span>}
             </Link>
           </div>
         </div>
-
-        {/* Category row (desktop) */}
-        <nav
-          className={cn(
-            'hidden lg:flex h-11 items-center justify-center gap-10 transition-colors duration-500',
-            overImage ? 'text-white' : 'text-ink'
-          )}
-          aria-label="Collections"
-        >
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn('caps u-hover', pathname === item.href && 'u-link')}
-            >
-              {item.name}
-            </Link>
-          ))}
-        </nav>
       </div>
+
+      {/* Shop panel (desktop) */}
+      <AnimatePresence>
+        {shopOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25, ease }}
+            className="hidden lg:block bg-white border-b border-line shadow-[0_12px_24px_-16px_rgba(0,0,0,0.18)]"
+          >
+            <div className="px-11 py-10 grid grid-cols-[220px_1fr] gap-12">
+              <ul className="space-y-3.5">
+                <li>
+                  <Link href="/shop" className="text-[0.95rem] text-ink hover:underline underline-offset-4">Shop all</Link>
+                </li>
+                <li>
+                  <Link href="/shop?sort=new" className="text-[0.95rem] text-ink hover:underline underline-offset-4">New arrivals</Link>
+                </li>
+                <li>
+                  <Link href="/offers" className="text-[0.95rem] text-sale hover:underline underline-offset-4">Offers</Link>
+                </li>
+                <li>
+                  <Link href="/categories" className="text-[0.95rem] text-ink hover:underline underline-offset-4">All categories</Link>
+                </li>
+              </ul>
+              <div className="flex gap-10">
+                {categories.slice(0, 6).map((c) => (
+                  <Link key={c._id} href={`/categories/${c.slug}`} className="group flex flex-col items-center gap-3 w-[132px]">
+                    <span className="w-[120px] h-[120px] rounded-full bg-tile overflow-hidden">
+                      {c.image?.url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.image.url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      )}
+                    </span>
+                    <span className="caps-sm text-ink text-center">{displayName(c.name)}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Search panel */}
       <AnimatePresence>
@@ -217,7 +246,7 @@ const Header = () => {
                 </button>
               </div>
               <nav className="flex-1 overflow-y-auto px-6 sm:px-10 py-8">
-                <ul className="space-y-1">
+                <ul>
                   {nav.map((item, i) => (
                     <motion.li
                       key={item.href}
@@ -225,7 +254,7 @@ const Header = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 + i * 0.04, duration: 0.45, ease }}
                     >
-                      <Link href={item.href} className="block py-2.5 title text-[1.65rem] text-ink hover:text-muted transition-colors">
+                      <Link href={item.href} className="block py-3 text-[1.35rem] font-light text-ink border-b border-line hover:text-rose transition-colors">
                         {item.name}
                       </Link>
                     </motion.li>

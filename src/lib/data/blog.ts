@@ -174,7 +174,7 @@ export const blogPosts: BlogPost[] = [
       <h2>How to Use It Effectively</h2>
       <p>For best results, wash your face twice daily. Lather a small amount of the face wash in your hands, gently massage it over your face in circular motions for at least 60 seconds (this gives the active ingredients time to work), and rinse with lukewarm—never hot—water.</p>
     `,
-    featuredImage: { url: '/blog/face-wash.jpg', alt: 'Azeeora Radiance Face Wash' },
+    featuredImage: { url: '/brand/products/azeeora-radiance-face-wash.jpg', alt: 'Azeeora Radiance Face Wash' },
     author: 'Azeeora Skincare Specialist',
     publishDate: '2026-08-15',
     readingTime: '6 min read',

@@ -82,10 +82,10 @@ export default function ProductListing(props: Props) {
   return (
     <div className="bg-white">
       {/* Header: title left, image right (falls back to a text-only header) */}
-      <section className={cn('grid border-b border-line', image ? 'lg:grid-cols-2' : '')}>
-        <div className={cn("px-5 sm:px-8 lg:px-10 py-12 flex flex-col justify-center", image ? "lg:py-0 lg:min-h-[440px]" : "lg:py-16")}>
+      <section className={cn('grid', image ? 'lg:grid-cols-2 bg-tile' : '')}>
+        <div className={cn("px-5 sm:px-8 lg:px-11 py-10 flex flex-col justify-center", image ? "lg:py-0 lg:min-h-[360px]" : "lg:py-12")}>
           {breadcrumb && (
-            <nav className="caps-sm text-muted mb-8 flex flex-wrap gap-2" aria-label="Breadcrumb">
+            <nav className="text-[0.8rem] text-muted mb-6 flex flex-wrap gap-2" aria-label="Breadcrumb">
               {breadcrumb.map((b, i) => (
                 <span key={i} className="flex gap-2">
                   {b.href ? (
@@ -100,11 +100,9 @@ export default function ProductListing(props: Props) {
               ))}
             </nav>
           )}
-          <h1 className="title text-[2.6rem] sm:text-6xl text-ink">
-            {title}
-            <sup className="text-[0.32em] ml-1.5 align-super tracking-normal">({total})</sup>
-          </h1>
-          {description && <p className="mt-6 max-w-lg text-[0.95rem] leading-relaxed text-gray-600">{description}</p>}
+          <h1 className="title text-[2.2rem] sm:text-[3.2rem] text-ink">{title}</h1>
+          <p className="mt-2 text-[0.9rem] text-muted">{total} product{total === 1 ? '' : 's'}</p>
+          {description && <p className="mt-4 max-w-lg text-[0.98rem] font-light leading-relaxed text-gray-600">{description}</p>}
         </div>
         {image && (
           <div className="hidden lg:block relative bg-tile">
@@ -114,17 +112,17 @@ export default function ProductListing(props: Props) {
       </section>
 
       {/* Filter / sort bar */}
-      <div className="sticky top-[92px] lg:top-[148px] z-30 bg-white border-b border-line">
-        <div className="h-12 px-5 sm:px-8 lg:px-10 flex items-center justify-between gap-4">
-          <button onClick={() => setFiltersOpen(true)} className="caps flex items-center gap-2 text-ink">
+      <div className="sticky top-[92px] lg:top-[112px] z-30 bg-white">
+        <div className="h-[68px] px-4 sm:px-6 lg:px-11 flex items-center justify-between gap-4">
+          <button onClick={() => setFiltersOpen(true)} className="h-10 px-5 rounded-full border border-ink text-[0.8rem] font-medium uppercase tracking-[0.06em] flex items-center gap-2 text-ink hover:bg-ink hover:text-white transition-colors">
             Filters{activeFilters > 0 && ` (${activeFilters})`}
           </button>
           <label className="flex items-center gap-3">
-            <span className="caps text-muted hidden sm:inline">Sort</span>
+            <span className="text-[0.85rem] text-muted hidden sm:inline">Sort by</span>
             <select
               value={sortBy}
               onChange={(e) => onSort(e.target.value)}
-              className="caps !bg-transparent border-0 pr-7 py-1 focus:outline-none focus:ring-0 cursor-pointer"
+              className="h-10 !rounded-full border border-line pl-4 pr-9 text-[0.85rem] focus:outline-none focus:ring-0 cursor-pointer"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -139,10 +137,10 @@ export default function ProductListing(props: Props) {
       {/* Grid */}
       <section className="px-0 sm:px-0">
         {isLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 sm:gap-x-4 px-4 sm:px-6 lg:px-11">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="p-2 sm:p-3">
-                <div className="aspect-[3/4] bg-tile animate-pulse" />
+              <div key={i} className="pb-8">
+                <div className="aspect-[20/21] bg-tile animate-pulse" />
                 <div className="h-3 w-2/3 bg-tile mt-4" />
                 <div className="h-3 w-1/3 bg-tile mt-2" />
               </div>
@@ -159,7 +157,7 @@ export default function ProductListing(props: Props) {
             </button>
           </div>
         ) : (
-          <div className={cn("grid grid-cols-2 gap-x-2 sm:gap-x-3 px-2 sm:px-3 pt-2 sm:pt-3", products.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-3 sm:gap-x-4 px-4 sm:px-6 lg:px-11 pt-1">
             {products.map((p, i) => (
               <ProductCard key={p._id} product={p} priority={i < 4} />
             ))}

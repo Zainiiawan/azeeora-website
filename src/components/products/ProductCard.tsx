@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { m as motion } from 'framer-motion';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingBag, Star } from 'lucide-react';
 import { cn, displayName, formatPrice, optimizeCloudinaryUrl, getCloudinarySrcSet } from '@/lib/utils';
 import { getEffectivePrice, getDiscountDisplay } from '@/lib/productUtils';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,7 +25,7 @@ interface ProductCardProps {
 }
 
 const PLACEHOLDER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f3f2ef'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='serif' font-size='22' letter-spacing='8' fill='%23111111'%3EAZEEORA%3C/text%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f4f4f4'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='22' letter-spacing='8' fill='%231a1a1a'%3EAZEEORA%3C/text%3E%3C/svg%3E";
 
 const ProductCard = ({ product, className, priority = false }: ProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -107,23 +107,27 @@ const ProductCard = ({ product, className, priority = false }: ProductCardProps)
         ? 'Coming soon'
         : '';
 
+  const onSale = product.basePrice > effectivePrice;
+  const badge = product.isComingSoon ? 'Coming soon' : discountDisplay || (product.isFeatured ? 'Bestseller' : '');
+  const rating = Number(product.rating) || 0;
+
   return (
     <motion.article
       className={cn('group flex flex-col', className)}
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.8 }}
+      transition={{ duration: 0.6 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
     >
       <div className="relative bg-tile overflow-hidden">
-        <Link href={`/products/${product.slug}`} className="block aspect-[3/4]" aria-label={product.name}>
+        <Link href={`/products/${product.slug}`} className="block aspect-[20/21]" aria-label={product.name}>
           <img
             src={imageSrc}
             {...(imageSrcSet ? { srcSet: imageSrcSet, sizes: '(max-width: 768px) 50vw, 25vw' } : {})}
             alt={mainImage?.alt || product.name}
-            className={cn('w-full h-full object-cover reveal-img', isHovered ? 'scale-[1.03]' : 'scale-100')}
+            className={cn('w-full h-full object-cover reveal-img', isHovered ? 'scale-[1.04]' : 'scale-100')}
             loading={priority ? 'eager' : 'lazy'}
             fetchPriority={priority ? 'high' : 'auto'}
             onError={(e) => {
@@ -132,50 +136,54 @@ const ProductCard = ({ product, className, priority = false }: ProductCardProps)
           />
         </Link>
 
-        {(discountDisplay || product.isComingSoon) && (
-          <span className="absolute top-3 left-3 caps-sm bg-white text-ink px-2 py-1">
-            {product.isComingSoon ? 'Coming soon' : discountDisplay}
+        {badge && (
+          <span
+            className={cn(
+              'absolute top-3 left-3 sm:top-4 sm:left-4 bg-white px-2.5 py-1.5 text-[0.7rem] font-medium uppercase tracking-[0.04em]',
+              discountDisplay && !product.isComingSoon ? 'text-sale' : 'text-ink'
+            )}
+          >
+            {badge}
           </span>
         )}
 
-        {!product.isComingSoon && (
+        <div className="absolute right-3 bottom-3 sm:right-4 sm:bottom-4 flex flex-col gap-2.5">
           <button
             type="button"
-            onClick={handleAddToCart}
-            className="absolute inset-x-3 bottom-3 frost caps py-3 text-ink transition-all duration-500 lg:opacity-0 lg:translate-y-2 lg:group-hover:opacity-100 lg:group-hover:translate-y-0 hover:bg-white"
+            onClick={handleWishlistToggle}
+            className="icon-btn"
+            aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+            aria-pressed={isWishlisted}
           >
-            Add to bag
+            <Heart className={cn('w-[19px] h-[19px]', isWishlisted && 'fill-current text-sale')} strokeWidth={1.4} />
           </button>
-        )}
-      </div>
-
-      <div className="pt-3.5 pb-6 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          {label && <p className="caps-sm text-muted mb-1 truncate">{label}</p>}
-          <Link href={`/products/${product.slug}`}>
-            <h3 className="caps !text-[0.76rem] text-ink leading-snug line-clamp-2">{product.name}</h3>
-          </Link>
-          <p className="mt-1.5 text-[0.8rem] tracking-wide text-ink">
-            {formatPrice(effectivePrice)}
-            {product.basePrice > effectivePrice && (
-              <span className="ml-2 text-muted line-through">{formatPrice(product.basePrice)}</span>
-            )}
-          </p>
-          {product.reviewCount > 0 && (
-            <p className="mt-1 text-[0.72rem] text-muted">
-              ★ {Number(product.rating).toFixed(1)} · {product.reviewCount} review{product.reviewCount === 1 ? '' : 's'}
-            </p>
+          {!product.isComingSoon && (
+            <button type="button" onClick={handleAddToCart} className="icon-btn" aria-label="Add to bag">
+              <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.4} />
+            </button>
           )}
         </div>
-        <button
-          type="button"
-          onClick={handleWishlistToggle}
-          className="shrink-0 -mt-0.5 p-1 text-ink"
-          aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-          aria-pressed={isWishlisted}
-        >
-          <Heart className={cn('w-4 h-4', isWishlisted && 'fill-current')} strokeWidth={1.2} />
-        </button>
+      </div>
+
+      <div className="pt-3.5 pb-8">
+        {product.reviewCount > 0 && (
+          <div className="flex items-center gap-1.5 mb-2" aria-label={`Rated ${rating.toFixed(1)} out of 5`}>
+            <span className="flex text-ink">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Star key={n} className={cn('w-[15px] h-[15px]', n <= Math.round(rating) ? 'fill-current' : 'text-gray-300')} strokeWidth={1} />
+              ))}
+            </span>
+            <span className="text-[0.75rem] text-ink">({product.reviewCount})</span>
+          </div>
+        )}
+        {label && <p className="caps-sm text-muted mb-1 truncate">{label}</p>}
+        <Link href={`/products/${product.slug}`}>
+          <h3 className="text-[0.95rem] font-light text-ink leading-snug line-clamp-2 hover:underline underline-offset-4">{product.name}</h3>
+        </Link>
+        <p className="mt-2 text-[0.95rem]">
+          <span className={cn('font-medium', onSale ? 'text-sale' : 'text-ink')}>{formatPrice(effectivePrice)}</span>
+          {onSale && <span className="ml-2.5 text-muted line-through font-light">{formatPrice(product.basePrice)}</span>}
+        </p>
       </div>
     </motion.article>
   );
