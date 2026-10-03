@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { memberApi, apiError } from '@/lib/api/memberApi';
+import { extrasApi, METRIC_LABEL } from '@/lib/api/extrasApi';
 import { useMember } from '@/lib/member/useMember';
 import { CopyField, Field, Notice, SelectField, Stat, StatusBadge, money } from '@/components/member/ui';
 import { cn, formatDate } from '@/lib/utils';
@@ -16,6 +17,8 @@ const TABS = [
   ['overview', 'Overview'],
   ['referrals', 'My referrals'],
   ['wallet', 'Wallet'],
+  ['incentives', 'Incentives'],
+  ['training', 'Training'],
   ['payout', 'Payout details'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -89,6 +92,8 @@ export default function PartnerDashboard() {
       {tab === 'overview' && <Overview />}
       {tab === 'referrals' && <Referrals />}
       {tab === 'wallet' && <WalletTab onPayout={() => setTab('payout')} />}
+      {tab === 'incentives' && <Incentives />}
+      {tab === 'training' && <TrainingTab />}
       {tab === 'payout' && <Payout />}
     </Shell>
   );
@@ -378,6 +383,91 @@ function Payout() {
           <button type="submit" disabled={submit.isPending} className="btn-ink justify-self-start">{submit.isPending ? 'Sending…' : 'Submit for verification'}</button>
         </form>
       )}
+    </div>
+  );
+}
+
+function Incentives() {
+  const { data = [], isLoading } = useQuery({ queryKey: ['my-incentives'], queryFn: extrasApi.incentives.mine });
+  if (isLoading) return <p className="text-muted">Loading…</p>;
+  if (data.length === 0) return <Notice>No incentives are running right now. Check back soon.</Notice>;
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      {data.map((i) => {
+        const pct = Math.min(100, ((i.progress ?? 0) / i.target) * 100);
+        const isMoney = i.metric !== 'new_referrals';
+        const fmt = (n: number) => (isMoney ? money(n) : String(Math.round(n)));
+        return (
+          <div key={i._id} className="border border-line">
+            {i.image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={i.image} alt="" className="w-full h-44 object-cover" />
+            )}
+            <div className="p-6">
+              <p className="text-[0.75rem] uppercase tracking-[0.08em] text-muted">
+                {formatDate(i.startDate)} to {formatDate(i.endDate)}
+              </p>
+              <h3 className="mt-2 text-[1.35rem] font-light">{i.title}</h3>
+              <p className="mt-1 text-[0.95rem]">Reward: <b className="font-medium">{i.reward}</b></p>
+              {i.description && <p className="mt-2 text-[0.9rem] text-gray-600 font-light">{i.description}</p>}
+              <div className="mt-5 flex justify-between text-[0.85rem]">
+                <span className="text-muted">{METRIC_LABEL[i.metric]}</span>
+                <span>
+                  {fmt(i.progress ?? 0)} / {fmt(i.target)}
+                </span>
+              </div>
+              <div className="mt-2 h-2 bg-tile rounded-full overflow-hidden">
+                <div className={cn('h-full', pct >= 100 ? 'bg-[#2f7d4f]' : 'bg-rose')} style={{ width: `${pct}%` }} />
+              </div>
+              {pct >= 100 ? (
+                <p className="mt-3 text-[0.9rem] text-[#2f7d4f]">You have qualified. Well done!</p>
+              ) : !i.started ? (
+                <p className="mt-3 text-[0.85rem] text-muted">Starts {formatDate(i.startDate)}</p>
+              ) : null}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TrainingTab() {
+  const { data = [], isLoading } = useQuery({ queryKey: ['my-training'], queryFn: extrasApi.trainings.mine });
+  const [open, setOpen] = useState<string | null>(null);
+  if (isLoading) return <p className="text-muted">Loading…</p>;
+  if (data.length === 0) return <Notice>Training guides will appear here.</Notice>;
+  const embed = (url: string) => {
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+  };
+  return (
+    <div className="border-t border-line">
+      {data.map((t) => (
+        <div key={t._id} className="border-b border-line">
+          <button onClick={() => setOpen(open === t._id ? null : t._id)} className="w-full flex items-center justify-between gap-4 py-5 text-left">
+            <span>
+              {t.category && <span className="block text-[0.75rem] uppercase tracking-[0.08em] text-muted">{t.category}</span>}
+              <span className="text-[1.1rem] font-light">{t.title}</span>
+              {t.summary && <span className="block text-[0.9rem] text-gray-600 font-light">{t.summary}</span>}
+            </span>
+            <span className="text-[1.4rem] font-light">{open === t._id ? '−' : '+'}</span>
+          </button>
+          {open === t._id && (
+            <div className="pb-6 space-y-4">
+              {t.videoUrl && embed(t.videoUrl) && (
+                <div className="aspect-video max-w-2xl">
+                  <iframe src={embed(t.videoUrl)!} title={t.title} className="w-full h-full" allowFullScreen />
+                </div>
+              )}
+              {t.videoUrl && !embed(t.videoUrl) && (
+                <a href={t.videoUrl} target="_blank" rel="noopener noreferrer" className="underline">Watch the video</a>
+              )}
+              {t.body && <div className="text-gray-700 font-light leading-relaxed whitespace-pre-line max-w-2xl">{t.body}</div>}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

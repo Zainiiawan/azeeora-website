@@ -66,6 +66,7 @@ const Header = () => {
   const nav = [
     { name: 'Shop all', href: '/shop' },
     ...categories.slice(0, 5).map((c) => ({ name: displayName(c.name), href: `/categories/${c.slug}` })),
+    { name: 'Catalogue', href: '/catalogue' },
     { name: 'Offers', href: '/offers' },
     { name: 'Join us', href: '/join' },
     { name: 'Wholesale', href: '/business' },
@@ -73,7 +74,7 @@ const Header = () => {
   ];
 
   const topLinks = [
-    { name: 'Offers', href: '/offers' },
+    { name: 'Catalogue', href: '/catalogue' },
     { name: 'Join us', href: '/join' },
     { name: 'Journal', href: '/blog' },
   ];

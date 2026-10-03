@@ -31,7 +31,7 @@ export const userApi = {
     return response.data.data;
   },
 
-  updateRole: async (userId: string, role: 'admin' | 'customer'): Promise<UserProfile> => {
+  updateRole: async (userId: string, role: 'admin' | 'customer' | 'warehouse'): Promise<UserProfile> => {
     const response = await api.patch(`/users/${userId}/role`, { role });
     return response.data.data;
   },

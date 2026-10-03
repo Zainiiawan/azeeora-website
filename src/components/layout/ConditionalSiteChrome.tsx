@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 
 export function ConditionalSiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
+  const isAdmin = pathname?.startsWith('/admin') || pathname?.startsWith('/warehouse') || pathname?.startsWith('/invoice');
 
   useEffect(() => {
     // Remove any leftover snap classes if they existed previously to ensure clean state

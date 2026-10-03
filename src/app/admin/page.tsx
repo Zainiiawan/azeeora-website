@@ -6,7 +6,7 @@ import { m as motion } from 'framer-motion';
 import {
   LayoutDashboard, Package, Users, ShoppingCart,
   Settings, TrendingUp, DollarSign, ArrowUpRight,
-  Menu, X, LogOut, Bell, Search, Star, Tag, MessageSquare, Layers, Truck, Handshake
+  Menu, X, LogOut, Bell, Search, Star, Tag, MessageSquare, Layers, Truck, Handshake, BookOpen, Warehouse
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatPrice } from '@/lib/utils';
@@ -25,6 +25,8 @@ const sidebarItems = [
   { name: 'Payments', href: '/admin/payments', icon: DollarSign },
   { name: 'Customers', href: '/admin/customers', icon: Users },
   { name: 'Members & payouts', href: '/admin/members', icon: Handshake },
+  { name: 'Content & reports', href: '/admin/content', icon: BookOpen },
+  { name: 'Warehouse', href: '/warehouse', icon: Warehouse },
   { name: 'Reviews', href: '/admin/reviews', icon: MessageSquare },
   { name: 'Coupons', href: '/admin/coupons', icon: Tag },
   { name: 'Shipping', href: '/admin/shipping', icon: Truck },

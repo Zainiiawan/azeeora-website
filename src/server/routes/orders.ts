@@ -586,7 +586,7 @@ orders.get('/track/lookup', async ({ query }) => {
 orders.get('/:orderId', authenticate, async ({ params, user }) => {
   const order = await db.orders.findById(params.orderId);
   if (!order) throw new NotFoundError('Order');
-  if (String(order.user) !== String(user!._id) && user!.role !== 'admin') {
+  if (String(order.user) !== String(user!._id) && user!.role !== 'admin' && user!.role !== 'warehouse') {
     throw new ForbiddenError('You do not have access to this order');
   }
   return json({ success: true, message: 'Order fetched', data: order });

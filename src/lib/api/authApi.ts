@@ -19,7 +19,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'admin' | 'warehouse';
   isEmailVerified: boolean;
   [key: string]: unknown;
 }

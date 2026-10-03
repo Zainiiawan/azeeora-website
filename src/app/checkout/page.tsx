@@ -21,6 +21,7 @@ import { settingsApi } from '@/lib/api/settingsApi';
 import ManualPaymentCard from '@/components/payments/ManualPaymentCard';
 import { getEffectivePrice } from '@/lib/productUtils';
 import { memberApi } from '@/lib/api/memberApi';
+import { extrasApi } from '@/lib/api/extrasApi';
 import { getRef } from '@/lib/member/referral';
 import { Wallet, Sparkles } from 'lucide-react';
 
@@ -82,6 +83,7 @@ function CheckoutContent() {
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
   } = useForm<CheckoutFormData>({
     defaultValues: {
       email: user?.email || '',
@@ -99,6 +101,8 @@ function CheckoutContent() {
   const [walletWanted, setWalletWanted] = useState(0);
   const [pointsWanted, setPointsWanted] = useState(0);
   const [refCode, setRefCode] = useState<string | undefined>(undefined);
+  const [pickupId, setPickupId] = useState('');
+  const { data: pickupPoints = [] } = useQuery({ queryKey: ['pickup-points'], queryFn: extrasApi.pickupPoints.list });
   useEffect(() => setRefCode(getRef()), []);
   const [debouncedCity, setDebouncedCity] = useState('');
   useEffect(() => {
@@ -176,7 +180,7 @@ function CheckoutContent() {
     [checkoutItems]
   );
   const { data: quote } = useQuery({
-    queryKey: ['checkout-quote', quoteItems, debouncedCity, isBuyNow ? null : couponCode, walletWanted, pointsWanted, refCode, isAuthenticated],
+    queryKey: ['checkout-quote', quoteItems, debouncedCity, isBuyNow ? null : couponCode, walletWanted, pointsWanted, refCode, isAuthenticated, pickupId],
     queryFn: () =>
       memberApi.quote({
         items: quoteItems,
@@ -185,6 +189,7 @@ function CheckoutContent() {
         refCode,
         walletAmount: walletWanted || undefined,
         pointsToRedeem: pointsWanted || undefined,
+        pickupPointId: pickupId || undefined,
       }),
     enabled: quoteItems.length > 0,
     placeholderData: (prev) => prev,
@@ -221,6 +226,7 @@ function CheckoutContent() {
         refCode,
         walletAmount: quote?.walletUsed || undefined,
         pointsToRedeem: quote?.pointsRedeemed || undefined,
+        pickupPointId: pickupId || undefined,
       };
 
       if (!isAuthenticated) {
@@ -331,8 +337,68 @@ function CheckoutContent() {
                   </div>
                 </div>
 
+                {/* Delivery or pickup */}
+                {pickupPoints.length > 0 && (
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-serif font-semibold mb-1 flex items-center gap-2 border-b pb-2">
+                      <Truck className="w-5 h-5 text-rose-gold" /> Delivery
+                    </h2>
+                    <label className="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer">
+                      <input type="radio" name="delivery" className="mt-1" checked={!pickupId} onChange={() => setPickupId('')} />
+                      <div>
+                        <p className="font-medium text-gray-900">Home delivery</p>
+                        <p className="text-sm text-gray-500">Delivered to your address in 3 to 5 working days</p>
+                      </div>
+                    </label>
+                    <label className="flex items-start gap-3 p-4 border border-gray-200 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="delivery"
+                        className="mt-1"
+                        checked={!!pickupId}
+                        onChange={() => {
+                          const p = pickupPoints[0];
+                          setPickupId(p._id);
+                          setValue('street', `Pickup: ${p.name}, ${p.address}`);
+                          setValue('city', p.city);
+                          setValue('state', p.city);
+                          setValue('postalCode', '00000');
+                        }}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">Pick up from a store (free)</p>
+                        {pickupId ? (
+                          <select
+                            value={pickupId}
+                            onChange={(e) => {
+                              const p = pickupPoints.find((x) => x._id === e.target.value)!;
+                              setPickupId(p._id);
+                              setValue('street', `Pickup: ${p.name}, ${p.address}`);
+                              setValue('city', p.city);
+                              setValue('state', p.city);
+                            }}
+                            className="mt-2 w-full border border-gray-300 px-3 py-2 text-sm"
+                          >
+                            {pickupPoints.map((p) => (
+                              <option key={p._id} value={p._id}>
+                                {p.name}, {p.city}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <p className="text-sm text-gray-500">Collect from one of our {pickupPoints.length} pickup point{pickupPoints.length === 1 ? '' : 's'}</p>
+                        )}
+                        {pickupId && (() => {
+                          const p = pickupPoints.find((x) => x._id === pickupId);
+                          return p ? <p className="mt-2 text-sm text-gray-600">{p.address}{p.hours ? ` · ${p.hours}` : ''}{p.phone ? ` · ${p.phone}` : ''}</p> : null;
+                        })()}
+                      </div>
+                    </label>
+                  </div>
+                )}
+
                 {/* Shipping Address */}
-                <div>
+                <div className={pickupId ? 'hidden' : ''}>
                   <h2 className="text-xl font-serif font-semibold mb-4 flex items-center gap-2 border-b pb-2">
                     <MapPin className="w-5 h-5 text-rose-gold" /> Shipping Address
                   </h2>

@@ -61,6 +61,8 @@ export interface Order {
   walletUsed?: number;
   pointsDiscount?: number;
   amountDue?: number;
+  deliveryMethod?: 'home' | 'pickup';
+  pickupPoint?: { _id: string; name: string; city: string; address: string; phone?: string };
   user: string | { _id: string; firstName: string; lastName: string; email: string; phone?: string };
   customerType?: 'registered' | 'guest';
   customerName?: string;

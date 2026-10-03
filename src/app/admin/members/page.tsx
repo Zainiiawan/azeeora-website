@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -403,10 +403,8 @@ function L({ label, hint, children }: { label: string; hint?: string; children: 
 function Settings() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ['member-settings'], queryFn: memberApi.admin.settings });
-  const [form, setForm] = useState<MemberSettings | null>(null);
-  useEffect(() => {
-    if (data && !form) setForm(data);
-  }, [data, form]);
+  const [edited, setForm] = useState<MemberSettings | null>(null);
+  const form = edited ?? data ?? null;
   const save = useMutation({
     mutationFn: (s: MemberSettings) => memberApi.admin.saveSettings(s),
     onSuccess: (s) => {

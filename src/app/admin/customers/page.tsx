@@ -20,7 +20,7 @@ export default function AdminCustomersPage() {
   });
 
   const roleMutation = useMutation({
-    mutationFn: ({ userId, role }: { userId: string; role: 'admin' | 'customer' }) =>
+    mutationFn: ({ userId, role }: { userId: string; role: 'admin' | 'customer' | 'warehouse' }) =>
       userApi.updateRole(userId, role),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-users'] }),
   });
@@ -102,18 +102,22 @@ export default function AdminCustomersPage() {
                         <div className="flex gap-2">
                           {currentUser?._id !== user._id && (
                             <>
-                              <button
-                                onClick={() =>
-                                  roleMutation.mutate({
-                                    userId: user._id,
-                                    role: user.role === 'admin' ? 'customer' : 'admin',
-                                  })
-                                }
-                                className="p-1.5 text-gray-500 hover:text-rose-gold"
-                                title="Toggle role"
-                              >
+                              <label className="inline-flex items-center gap-1 text-gray-500" title="Role">
                                 <Shield className="w-4 h-4" />
-                              </button>
+                                <select
+                                  value={user.role}
+                                  onChange={(e) => {
+                                    const role = e.target.value as 'admin' | 'customer' | 'warehouse';
+                                    if (role === 'admin' && !window.confirm(`Give ${user.firstName} full admin access?`)) return;
+                                    roleMutation.mutate({ userId: user._id, role });
+                                  }}
+                                  className="text-xs border border-gray-200 rounded px-1 py-1 bg-white"
+                                >
+                                  <option value="customer">Customer</option>
+                                  <option value="warehouse">Warehouse staff</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                              </label>
                               <button
                                 onClick={() =>
                                   activeMutation.mutate({
