@@ -33,6 +33,26 @@ filters on. Uniqueness is enforced in the database:
 Row Level Security is on with no policies, so the public Supabase keys can
 read nothing. Only the server (via `DATABASE_URL`) can access data.
 
+## Going live (Telgates Vercel team)
+
+1. **Database login.** `supabase/migrations/0002_app_role.sql` (already applied)
+   created the `azeeora_app` role with access to the store tables only. Give
+   it a password at deploy time, then use it in `DATABASE_URL`:
+   ```sql
+   alter role azeeora_app login password '<long random string>';
+   ```
+   `DATABASE_URL=postgresql://azeeora_app.vggdwnmovgtzkuciqiro:<password>@aws-0-ap-south-1.pooler.supabase.com:6543/postgres`
+   (if the health check says disconnected, try host `aws-1-ap-south-1`).
+2. **Vercel project** in the Telgates team from `Zainiiawan/ayezacosmetics-frontend`,
+   with **production branch `claude/unified-luxury-redesign`**.
+   Do not merge into `main` yet: the current live site (old Vercel account)
+   builds from `main` and would break without these variables.
+3. **Variables:** `DATABASE_URL`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`,
+   `NEXT_PUBLIC_API_URL=/api`, plus Cloudinary and email keys when available.
+4. Check `https://<project>.vercel.app/api/health` says `"database":"connected"`.
+5. **Domain:** add it to the new project, point DNS at Vercel, set
+   `NEXT_PUBLIC_APP_URL`, then merge the branch into `main`.
+
 ## Environment variables (Vercel → Project → Settings → Environment Variables)
 
 | name | value |
