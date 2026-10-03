@@ -1,4 +1,4 @@
-# Ayeza Cosmetics: one app, one deploy
+# Azeeora Cosmetics: one app, one deploy
 
 The storefront, admin panel and API now live in this single Next.js app.
 The old Express server (`ayezacosmetics-backend`, hosted on Render) is no
@@ -12,7 +12,7 @@ supabase/migrations SQL schema for the Supabase database
 scripts/            one-off MongoDB -> Supabase data copy
 ```
 
-## Database (Supabase, project `ayeza-cosmetics`, Telgates org)
+## Database (Supabase, project `azeeora-cosmetics`, Telgates org)
 
 The schema in `supabase/migrations/0001_init.sql` is already applied.
 Each old Mongo collection is a table with the original `_id`, the full

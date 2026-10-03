@@ -1,6 +1,15 @@
 import nodemailer from 'nodemailer';
 import { ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS, STORE_CONTACT } from './shared';
 import { logger } from './logger';
+
+/** Public site address for links in emails. */
+const siteUrl = () =>
+  (
+    process.env.CLIENT_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '') ||
+    'http://localhost:3000'
+  ).replace(/\/+$/, '');
 import { Resend } from 'resend';
 
 // ─── Resend API client (HTTPS-based, works on all cloud providers) ───────────
@@ -45,7 +54,7 @@ const baseEmailTemplate = (content: string) => `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AYEZA COSMETICS</title>
+  <title>AZEEORA COSMETICS</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -66,14 +75,14 @@ const baseEmailTemplate = (content: string) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://ayezacosmetics.store/icon.png" alt="AYEZA COSMETICS Logo">
-      <h1>AYEZA COSMETICS</h1>
+      <img src="${siteUrl()}/icon.png" alt="AZEEORA COSMETICS Logo">
+      <h1>AZEEORA COSMETICS</h1>
       <p>Luxury Beauty, Redefined</p>
     </div>
     <div class="content">${content}</div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} AYEZA COSMETICS. All rights reserved.</p>
-      <p><a href="https://ayezacosmetics.store">ayezacosmetics.store</a></p>
+      <p>© ${new Date().getFullYear()} AZEEORA COSMETICS. All rights reserved.</p>
+      <p><a href="${siteUrl()}">${siteUrl().replace(/^https?:\/\//, '')}</a></p>
     </div>
   </div>
 </body>
@@ -97,7 +106,7 @@ const sendMail = async (
 
     if (resend) {
       // ── Primary: Resend API (HTTPS, no port blocking) ──────────────────
-      const fromAddress = process.env.RESEND_FROM || 'AYEZA COSMETICS <noreply@ayezacosmetics.store>';
+      const fromAddress = process.env.RESEND_FROM || 'AZEEORA COSMETICS <onboarding@resend.dev>';
       const { error } = await resend.emails.send({
         from: fromAddress,
         to: [to],
@@ -137,10 +146,10 @@ const sendMail = async (
 };
 
 export const sendVerificationEmail = async (email: string, firstName: string, token: string): Promise<void> => {
-  const verifyUrl = `${(process.env.CLIENT_URL || process.env.CORS_ORIGIN?.split(',')[0] || 'https://ayezacosmetics.store')}/auth/verify-email?token=${token}`;
+  const verifyUrl = `${siteUrl()}/auth/verify-email?token=${token}`;
   await sendMail(
     email,
-    'Welcome to AYEZA COSMETICS — Verify Your Email',
+    'Welcome to AZEEORA COSMETICS — Verify Your Email',
     `
       <h2>Welcome, ${firstName}!</h2>
       <p>Please verify your email to activate your account.</p>
@@ -155,7 +164,7 @@ export const sendVerificationEmail = async (email: string, firstName: string, to
 export const sendOtpEmail = async (email: string, firstName: string, otp: string): Promise<void> => {
   await sendMail(
     email,
-    'AYEZA COSMETICS — Your Verification Code',
+    'AZEEORA COSMETICS — Your Verification Code',
     `
       <h2>Verify Your Email</h2>
       <p>Hi ${firstName}, your verification code is:</p>
@@ -172,7 +181,7 @@ export const sendOtpEmail = async (email: string, firstName: string, otp: string
 export const sendPasswordResetOtpEmail = async (email: string, firstName: string, otp: string): Promise<void> => {
   await sendMail(
     email,
-    'AYEZA COSMETICS — Password Reset Verification Code',
+    'AZEEORA COSMETICS — Password Reset Verification Code',
     `
       <h2>Reset Your Password</h2>
       <p>Hi ${firstName}, we received a password reset request for your account.</p>
@@ -244,7 +253,7 @@ export const sendOrderConfirmationEmail = async (
   }
 ): Promise<void> => {
   const orderId = typeof order._id === 'string' ? order._id : order._id.toString();
-  const trackUrl = `${(process.env.CLIENT_URL || process.env.CORS_ORIGIN?.split(',')[0] || 'https://ayezacosmetics.store')}/track-order?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(email)}`;
+  const trackUrl = `${siteUrl()}/track-order?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(email)}`;
   const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
   const paymentLabel = PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod;
   const addr = order.shippingAddress;
@@ -254,7 +263,7 @@ export const sendOrderConfirmationEmail = async (
 
   await sendMail(
     email,
-    `AYEZA COSMETICS — Order Confirmed #${order.orderNumber}`,
+    `AZEEORA COSMETICS — Order Confirmed #${order.orderNumber}`,
     `
       <h2>Thank you, ${firstName}!</h2>
       <p>Your order has been placed successfully. Here are your order details:</p>
@@ -301,7 +310,7 @@ export const sendNewOrderNotificationEmail = async (
   adminEmail: string,
   order: any
 ): Promise<void> => {
-  const orderUrl = `${(process.env.CLIENT_URL || process.env.CORS_ORIGIN?.split(',')[0] || 'https://ayezacosmetics.store')}/admin/orders?id=${order._id}`;
+  const orderUrl = `${siteUrl()}/admin/orders?id=${order._id}`;
   const statusLabel = ORDER_STATUS_LABELS[order.status as keyof typeof ORDER_STATUS_LABELS] || order.status;
   const paymentLabel = PAYMENT_METHOD_LABELS[order.paymentMethod as keyof typeof PAYMENT_METHOD_LABELS] || order.paymentMethod;
 
@@ -310,7 +319,7 @@ export const sendNewOrderNotificationEmail = async (
     `New Order Received #${order.orderNumber}`,
     `
       <h2>New Order Received!</h2>
-      <p>A new order has been placed on AYEZA COSMETICS.</p>
+      <p>A new order has been placed on AZEEORA COSMETICS.</p>
 
       <div style="background:#faf7f5;border:1px solid #e8ddd6;border-radius:8px;padding:16px;margin:20px 0;">
         <p style="margin:0 0 8px;"><strong>Order Number:</strong> ${order.orderNumber}</p>
@@ -336,12 +345,12 @@ export const sendPaymentStatusEmail = async (
   approved: boolean,
   reason?: string
 ): Promise<void> => {
-  const orderUrl = `${(process.env.CLIENT_URL || process.env.CORS_ORIGIN?.split(',')[0] || 'https://ayezacosmetics.store')}/account/orders/${orderId}`;
+  const orderUrl = `${siteUrl()}/account/orders/${orderId}`;
   await sendMail(
     email,
     approved
-      ? `AYEZA COSMETICS — Payment Approved #${orderNumber}`
-      : `AYEZA COSMETICS — Payment Rejected #${orderNumber}`,
+      ? `AZEEORA COSMETICS — Payment Approved #${orderNumber}`
+      : `AZEEORA COSMETICS — Payment Rejected #${orderNumber}`,
     approved
       ? `
         <h2>Payment Approved</h2>
@@ -370,7 +379,7 @@ export const sendOrderStatusEmail = async (
     estimatedDelivery?: Date;
   }
 ): Promise<void> => {
-  const trackUrl = `${(process.env.CLIENT_URL || process.env.CORS_ORIGIN?.split(',')[0] || 'https://ayezacosmetics.store')}/track-order?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(email)}`;
+  const trackUrl = `${siteUrl()}/track-order?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(email)}`;
   const trackingBlock = `
       <div style="background:#faf7f5;border:1px solid #e8ddd6;border-radius:8px;padding:16px;margin:16px 0;">
         <p style="margin:0 0 8px;"><strong>Order ID:</strong> ${orderNumber}</p>
@@ -383,7 +392,7 @@ export const sendOrderStatusEmail = async (
 
   await sendMail(
     email,
-    `AYEZA COSMETICS — ${statusLabel} #${orderNumber}`,
+    `AZEEORA COSMETICS — ${statusLabel} #${orderNumber}`,
     `
       <h2>${statusLabel}</h2>
       <p>Hi ${firstName}, your order <strong>${orderNumber}</strong> is now: <strong>${statusLabel}</strong>.</p>
@@ -401,11 +410,11 @@ export const sendOrderStatusEmail = async (
 export const sendWelcomeEmail = async (email: string, firstName: string): Promise<void> => {
   await sendMail(
     email,
-    'Welcome to AYEZA COSMETICS',
+    'Welcome to AZEEORA COSMETICS',
     `
       <h2>Welcome, ${firstName}!</h2>
       <p>Your email is verified. Explore our luxury beauty collection.</p>
-      <p style="text-align:center;"><a href="${(process.env.CLIENT_URL || process.env.CORS_ORIGIN?.split(',')[0] || 'https://ayezacosmetics.store')}/shop" class="btn">Start Shopping</a></p>
+      <p style="text-align:center;"><a href="${siteUrl()}/shop" class="btn">Start Shopping</a></p>
     `
   );
 };
@@ -453,10 +462,10 @@ export const sendAdminReplyEmail = async (
   productSlug: string,
   replyBody: string
 ): Promise<void> => {
-  const productUrl = `${(process.env.CLIENT_URL || process.env.CORS_ORIGIN?.split(',')[0] || 'https://ayezacosmetics.store')}/products/${productSlug}`;
+  const productUrl = `${siteUrl()}/products/${productSlug}`;
   await sendMail(
     email,
-    `AYEZA COSMETICS — Admin Reply to Your Review on ${productName}`,
+    `AZEEORA COSMETICS — Admin Reply to Your Review on ${productName}`,
     `
       <h2>Hi ${firstName},</h2>
       <p>An admin has replied to your review on <strong>${productName}</strong>:</p>
@@ -470,7 +479,7 @@ export const sendAdminReplyEmail = async (
       </p>
       
       <p style="color:#666;font-size:13px;text-align:center;margin-top:32px;">
-        Thank you for being a part of AYEZA COSMETICS!
+        Thank you for being a part of AZEEORA COSMETICS!
       </p>
     `
   );

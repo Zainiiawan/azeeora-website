@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { RefreshCcw, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Refund & Returns | AYEZA COSMETICS',
+  title: 'Refund & Returns | AZEEORA COSMETICS',
   description: 'Our hassle-free 14-day refund and return policy.',
   alternates: {
     canonical: '/refunds',
   },
   openGraph: {
-    title: 'Refund & Returns | AYEZA COSMETICS',
+    title: 'Refund & Returns | AZEEORA COSMETICS',
     description: 'Our hassle-free 14-day refund and return policy.',
     url: '/refunds',
     type: 'website',
@@ -21,7 +21,7 @@ export default function RefundsPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Refund & Returns - AYEZA COSMETICS',
+    name: 'Refund & Returns - AZEEORA COSMETICS',
     description: 'Our hassle-free 14-day refund and return policy.',
     url: `${config.getBaseUrl()}/refunds`,
   };
@@ -93,7 +93,7 @@ export default function RefundsPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-10 prose prose-gray max-w-none text-gray-600">
           <h2 className="text-2xl font-serif font-bold text-black mb-4">How to Start a Return</h2>
           <ol className="space-y-4 list-decimal pl-4">
-            <li><strong>Contact Us:</strong> Email us at <a href="mailto:ayezacosmtics@gmail.com" className="text-rose-gold font-medium">ayezacosmtics@gmail.com</a> or reach out via WhatsApp with your Order ID and reason for return.</li>
+            <li><strong>Contact Us:</strong> Email us at <a href="mailto:azeeoracosmetics@gmail.com" className="text-rose-gold font-medium">azeeoracosmetics@gmail.com</a> or reach out via WhatsApp with your Order ID and reason for return.</li>
             <li><strong>Approval:</strong> Our team will review your request. If approved, we will provide you with the return shipping address.</li>
             <li><strong>Dispatch:</strong> Securely pack the items and send them back to us. <span className="italic text-sm text-gray-500">(Note: Return shipping costs are the customer's responsibility unless the item was damaged upon arrival).</span></li>
             <li><strong>Refund/Exchange:</strong> Once we receive and inspect the item, we will process your refund via Bank Transfer/Easypaisa within 5-7 business days, or dispatch your exchange.</li>

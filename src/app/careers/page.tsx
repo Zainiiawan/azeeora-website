@@ -2,15 +2,15 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Careers | AYEZA COSMETICS',
+  title: 'Careers | AZEEORA COSMETICS',
 };
 
 export default function CareersPage() {
   return (
     <div className="container mx-auto px-4 py-16 max-w-3xl min-h-[60vh]">
-      <h1 className="text-3xl font-serif font-bold mb-8">Careers at AYEZA COSMETICS</h1>
+      <h1 className="text-3xl font-serif font-bold mb-8">Careers at AZEEORA COSMETICS</h1>
       <div className="prose prose-gray space-y-4 text-gray-600">
-        <p>Join us in our mission to redefine luxury beauty and cosmetics in Pakistan and beyond. At AYEZA COSMETICS, we are always looking for passionate, creative, and driven individuals to join our growing team.</p>
+        <p>Join us in our mission to redefine luxury beauty and cosmetics in Pakistan and beyond. At AZEEORA COSMETICS, we are always looking for passionate, creative, and driven individuals to join our growing team.</p>
         
         <h2 className="text-xl font-semibold text-black mt-8">Why Work With Us?</h2>
         <ul className="list-disc pl-5 space-y-2">
@@ -27,7 +27,7 @@ export default function CareersPage() {
         </div>
 
         <h2 className="text-xl font-semibold text-black mt-8">Speculative Applications</h2>
-        <p>If you don't see a role that fits your experience but would love to work with us, please send your resume and a cover letter to <a href="mailto:ayezacosmtics@gmail.com" className="text-rose-gold">ayezacosmtics@gmail.com</a>.</p>
+        <p>If you don't see a role that fits your experience but would love to work with us, please send your resume and a cover letter to <a href="mailto:azeeoracosmetics@gmail.com" className="text-rose-gold">azeeoracosmetics@gmail.com</a>.</p>
       </div>
     </div>
   );

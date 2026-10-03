@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Cookie Policy | AYEZA COSMETICS',
+  title: 'Cookie Policy | AZEEORA COSMETICS',
 };
 
 export default function CookiesPage() {
@@ -10,7 +10,7 @@ export default function CookiesPage() {
     <div className="container mx-auto px-4 py-16 max-w-3xl">
       <h1 className="text-3xl font-serif font-bold mb-8">Cookie Policy</h1>
       <div className="prose prose-gray space-y-4 text-gray-600">
-        <p>This Cookie Policy explains how AYEZA COSMETICS uses cookies and similar technologies to recognize you when you visit our website.</p>
+        <p>This Cookie Policy explains how AZEEORA COSMETICS uses cookies and similar technologies to recognize you when you visit our website.</p>
         
         <h2 className="text-xl font-semibold text-black mt-8">What are cookies?</h2>
         <p>Cookies are small data files that are placed on your computer or mobile device when you visit a website. They are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information.</p>
@@ -30,7 +30,7 @@ export default function CookiesPage() {
         <p>You have the right to decide whether to accept or reject cookies. You can exercise your cookie rights by setting your preferences in the Cookie Consent Manager. You can also set or amend your web browser controls to accept or refuse cookies.</p>
         
         <h2 className="text-xl font-semibold text-black mt-8">Contact Us</h2>
-        <p>If you have any questions about our use of cookies, please contact us at <a href="mailto:ayezacosmtics@gmail.com" className="text-rose-gold">ayezacosmtics@gmail.com</a>.</p>
+        <p>If you have any questions about our use of cookies, please contact us at <a href="mailto:azeeoracosmetics@gmail.com" className="text-rose-gold">azeeoracosmetics@gmail.com</a>.</p>
       </div>
     </div>
   );

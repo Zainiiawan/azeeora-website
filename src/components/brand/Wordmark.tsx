@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 /**
- * The AYEZA wordmark in Bodoni Moda. `opsz` picks the optical size: low values
+ * The AZEEORA wordmark in Bodoni Moda. `opsz` picks the optical size: low values
  * give sturdier hairlines for small sizes (header), 96 gives the finest
  * contrast for very large settings on white (homepage, footer).
  */
@@ -20,13 +20,13 @@ export default function Wordmark({
   sublineSize?: string;
 }) {
   return (
-    <span className={cn('inline-flex flex-col items-center leading-none select-none', className)} aria-label="Ayeza">
+    <span className={cn('inline-flex flex-col items-center leading-none select-none', className)} aria-label="Azeeora">
       <span
         aria-hidden
         className="font-serif font-normal"
-        style={{ fontVariationSettings: `"opsz" ${opsz}`, letterSpacing: '0.14em', marginRight: '-0.14em', lineHeight: 0.78 }}
+        style={{ fontVariationSettings: `"opsz" ${opsz}`, letterSpacing: '0.12em', marginRight: '-0.12em', lineHeight: 0.78 }}
       >
-        AYEZA
+        AZEEORA
       </span>
       {showSubline && (
         <span

@@ -6,14 +6,14 @@ import {
 import Button from '@/components/ui/Button';
 
 export const metadata: Metadata = {
-  title: 'Help Center | AYEZA COSMETICS',
-  description: 'FAQs, shipping, returns, refunds, and customer support for AYEZA COSMETICS.',
+  title: 'Help Center | AZEEORA COSMETICS',
+  description: 'FAQs, shipping, returns, refunds, and customer support for AZEEORA COSMETICS.',
 };
 
 const CONTACT = {
   phone: '+92 306 0466911',
   whatsapp: '923060466911',
-  email: 'ayezacosmtics@gmail.com',
+  email: 'azeeoracosmetics@gmail.com',
   hours: 'Mon – Sat: 10:00 AM – 8:00 PM (PKT)',
 };
 
@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     q: 'Are your products authentic?',
-    a: 'Yes. AYEZA COSMETICS sells 100% genuine luxury beauty products sourced from trusted suppliers.',
+    a: 'Yes. AZEEORA COSMETICS sells 100% genuine luxury beauty products sourced from trusted suppliers.',
   },
   {
     q: 'How do I verify my account?',

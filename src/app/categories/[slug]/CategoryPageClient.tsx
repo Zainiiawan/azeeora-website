@@ -65,7 +65,7 @@ export default function CategoryPageClient({ initialCategoryData, initialProduct
         title={name}
         description={category?.description}
         image={category?.image?.url}
-        breadcrumb={[{ label: 'Ayeza', href: '/' }, { label: 'Collections', href: '/categories' }, { label: name }]}
+        breadcrumb={[{ label: 'Azeeora', href: '/' }, { label: 'Collections', href: '/categories' }, { label: name }]}
         products={data?.products ?? []}
         pagination={data?.pagination}
         isLoading={isLoading && !data}

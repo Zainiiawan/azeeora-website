@@ -113,7 +113,7 @@ const toApiPayload = (data: CreateProductData | UpdateProductData): Record<strin
     payload.description =
       data.description.length >= 10
         ? data.description
-        : `${data.description} — Premium AYEZA COSMETICS product.`;
+        : `${data.description} — Premium AZEEORA COSMETICS product.`;
   }
   if (data.discount !== undefined) {
     payload.discount = data.discount;
@@ -161,7 +161,7 @@ export const productApi = {
     }
     const payload = toApiPayload({
       ...data,
-      description: data.description || `${data.name} — Luxury beauty by AYEZA COSMETICS.`,
+      description: data.description || `${data.name} — Luxury beauty by AZEEORA COSMETICS.`,
     });
     const response = await api.post('/products', payload);
     return response.data.data;

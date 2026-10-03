@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Page Not Found | Ayeza Cosmetics',
+  title: 'Page Not Found | Azeeora Cosmetics',
   description: 'The page you requested could not be found.',
 };
 

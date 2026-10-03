@@ -1,4 +1,4 @@
-export declare const APP_NAME = "AYEZA COSMETICS";
+export declare const APP_NAME = "AZEEORA COSMETICS";
 export declare const APP_TAGLINE = "Luxury Beauty, Redefined.";
 export declare const APP_DESCRIPTION = "Premium luxury cosmetics and beauty products. Discover our curated collection of skincare, makeup, and fragrances.";
 export declare const PAGINATION_DEFAULTS: {

@@ -5,7 +5,7 @@ import { getEffectivePrice } from '@/lib/productUtils';
 import { Product } from '@/lib/api/productApi';
 
 export const metadata: Metadata = {
-  title: 'Special Offers | AYEZA COSMETICS',
+  title: 'Special Offers | AZEEORA COSMETICS',
   description: 'Exclusive deals on luxury beauty — limited time only.',
   alternates: {
     canonical: '/offers',

@@ -1,3 +1,4 @@
+import { config } from '@/lib/config';
 import { Metadata } from 'next';
 import { blogPosts } from '@/lib/data/blog';
 import BlogCard from '@/components/blog/BlogCard';
@@ -5,12 +6,12 @@ import BlogSidebar from '@/components/blog/BlogSidebar';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Beauty Blog & Skincare Tips | Ayeza Cosmetics',
-  description: 'Discover the latest skincare tips, makeup tutorials, and beauty secrets from Ayeza Cosmetics experts. Achieve your flawless look today.',
+  title: 'Beauty Blog & Skincare Tips | Azeeora Cosmetics',
+  description: 'Discover the latest skincare tips, makeup tutorials, and beauty secrets from Azeeora Cosmetics experts. Achieve your flawless look today.',
   openGraph: {
-    title: 'Beauty Blog & Skincare Tips | Ayeza Cosmetics',
-    description: 'Discover the latest skincare tips, makeup tutorials, and beauty secrets from Ayeza Cosmetics experts.',
-    url: 'https://ayezacosmetics.com/blog',
+    title: 'Beauty Blog & Skincare Tips | Azeeora Cosmetics',
+    description: 'Discover the latest skincare tips, makeup tutorials, and beauty secrets from Azeeora Cosmetics experts.',
+    url: `${config.getBaseUrl()}/blog`,
     type: 'website',
   },
 };
@@ -27,13 +28,13 @@ export default function BlogListingPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Ayeza Cosmetics Beauty Blog',
+    name: 'Azeeora Cosmetics Beauty Blog',
     description: 'Expert skincare tips, makeup tutorials, and beauty news.',
-    url: 'https://ayezacosmetics.com/blog',
+    url: `${config.getBaseUrl()}/blog`,
     hasPart: blogPosts.map((post) => ({
       '@type': 'Article',
       headline: post.title,
-      url: `https://ayezacosmetics.com/blog/\${post.slug}`,
+      url: `${config.getBaseUrl()}/blog/${post.slug}`,
       author: {
         '@type': 'Person',
         name: post.author,

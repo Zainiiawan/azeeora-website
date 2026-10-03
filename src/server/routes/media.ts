@@ -33,7 +33,7 @@ async function uploadToCloudinary(file: File, useModeration: boolean) {
   }
   const cloudinary = getCloudinary();
   const isVideo = (VIDEO_FORMATS as readonly string[]).includes(file.type);
-  const options: Record<string, unknown> = { folder: 'ayeza-cosmetics', resource_type: isVideo ? 'video' : 'image' };
+  const options: Record<string, unknown> = { folder: 'azeeora-cosmetics', resource_type: isVideo ? 'video' : 'image' };
   if (useModeration) options.moderation = 'aws_rek';
 
   const buffer = Buffer.from(await file.arrayBuffer());

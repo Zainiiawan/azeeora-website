@@ -5,14 +5,14 @@ import { Sparkles, Heart, Shield, Leaf } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
 export const metadata: Metadata = {
-  title: 'About Us | AYEZA COSMETICS',
-  description: 'Discover the story behind AYEZA COSMETICS — luxury beauty crafted for the modern woman in Pakistan.',
+  title: 'About Us | AZEEORA COSMETICS',
+  description: 'Discover the story behind AZEEORA COSMETICS — luxury beauty crafted for the modern woman in Pakistan.',
   alternates: {
     canonical: '/about',
   },
   openGraph: {
-    title: 'About Us | AYEZA COSMETICS',
-    description: 'Discover the story behind AYEZA COSMETICS — luxury beauty crafted for the modern woman in Pakistan.',
+    title: 'About Us | AZEEORA COSMETICS',
+    description: 'Discover the story behind AZEEORA COSMETICS — luxury beauty crafted for the modern woman in Pakistan.',
     url: '/about',
     type: 'website',
   },
@@ -29,8 +29,8 @@ export default function AboutPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'AboutPage',
-    name: 'About AYEZA COSMETICS',
-    description: 'Discover the story behind AYEZA COSMETICS — luxury beauty crafted for the modern woman in Pakistan.',
+    name: 'About AZEEORA COSMETICS',
+    description: 'Discover the story behind AZEEORA COSMETICS — luxury beauty crafted for the modern woman in Pakistan.',
     url: `${config.getBaseUrl()}/about`,
   };
 
@@ -44,10 +44,10 @@ export default function AboutPage() {
         <div className="container mx-auto px-4 text-center max-w-3xl">
           <p className="text-rose-gold uppercase tracking-widest text-sm mb-4">Our Story</p>
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-6">
-            AYEZA <span className="text-rose-gold">COSMETICS</span>
+            AZEEORA <span className="text-rose-gold">COSMETICS</span>
           </h1>
           <p className="text-gray-300 text-lg leading-relaxed">
-            Born from a passion for luxury beauty, AYEZA COSMETICS brings world-class skincare, makeup, and fragrances to Pakistan — making premium self-care accessible, elegant, and unforgettable.
+            Born from a passion for luxury beauty, AZEEORA COSMETICS brings world-class skincare, makeup, and fragrances to Pakistan — making premium self-care accessible, elegant, and unforgettable.
           </p>
         </div>
       </section>

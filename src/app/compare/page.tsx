@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button';
 import { productApi, Product } from '@/lib/api/productApi';
 import { formatPrice } from '@/lib/utils';
 
-const COMPARE_KEY = 'ayeza_compare';
+const COMPARE_KEY = 'azeeora_compare';
 
 export default function ComparePage() {
   const [products, setProducts] = useState<Product[]>([]);

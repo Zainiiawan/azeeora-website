@@ -152,7 +152,7 @@ function TrackOrderContent() {
                 label="Order Number"
                 value={orderNumber}
                 onChange={(e) => setOrderNumber(e.target.value)}
-                placeholder="e.g. AYZ-1785327733518-0001"
+                placeholder="e.g. AZR-1785327733518-0001"
                 required
               />
               <Input

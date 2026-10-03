@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
+  // Rebrand: old Ayeza product addresses move permanently to the Azeeora ones
+  async redirects() {
+    return [
+      { source: '/products/ayeza-:rest', destination: '/products/azeeora-:rest', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

@@ -29,13 +29,13 @@ export async function generateMetadata({
   if (!category) {
     const fallbackName = slug ? slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Category';
     return {
-      title: `${fallbackName} | AYEZA COSMETICS`,
-      description: `Browse our premium collection of ${fallbackName} at AYEZA COSMETICS.`,
+      title: `${fallbackName} | AZEEORA COSMETICS`,
+      description: `Browse our premium collection of ${fallbackName} at AZEEORA COSMETICS.`,
     };
   }
 
-  const title = `${category.name} | AYEZA COSMETICS`;
-  const description = category.description || `Browse our premium collection of ${category.name} at AYEZA COSMETICS.`;
+  const title = `${category.name} | AZEEORA COSMETICS`;
+  const description = category.description || `Browse our premium collection of ${category.name} at AZEEORA COSMETICS.`;
   const canonicalPath = `/categories/${category.slug}`;
   const canonicalUrl = new URL(canonicalPath, config.getBaseUrl()).toString();
 

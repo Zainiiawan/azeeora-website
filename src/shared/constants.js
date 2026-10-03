@@ -4,7 +4,7 @@
 // ==========================================
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HTTP_STATUS = exports.TOKEN_TYPES = exports.CACHE_KEYS = exports.USER_ROLES = exports.COUPON_TYPES = exports.MAX_IMAGE_SIZE = exports.IMAGE_FORMATS = exports.SUPPORTED_COUNTRIES = exports.SHIPPING_COST = exports.FREE_SHIPPING_THRESHOLD = exports.MAX_CART_QUANTITY = exports.RATING_OPTIONS = exports.SORT_OPTIONS = exports.PAYMENT_STATUS_LABELS = exports.PAYMENT_METHOD_LABELS = exports.PAYMENT_METHODS = exports.ORDER_STATUS_LABELS = exports.ORDER_STATUSES = exports.PAGINATION_DEFAULTS = exports.APP_DESCRIPTION = exports.APP_TAGLINE = exports.APP_NAME = void 0;
-exports.APP_NAME = 'AYEZA COSMETICS';
+exports.APP_NAME = 'AZEEORA COSMETICS';
 exports.APP_TAGLINE = 'Luxury Beauty, Redefined.';
 exports.APP_DESCRIPTION = 'Premium luxury cosmetics and beauty products. Discover our curated collection of skincare, makeup, and fragrances.';
 exports.PAGINATION_DEFAULTS = {

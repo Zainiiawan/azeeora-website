@@ -1,4 +1,4 @@
--- AYEZA COSMETICS: document-style schema on Postgres (Supabase).
+-- AZEEORA COSMETICS: document-style schema on Postgres (Supabase).
 --
 -- Every collection from the old MongoDB database becomes one table.
 -- `_id` keeps the original 24-char ObjectId so every link, order URL and

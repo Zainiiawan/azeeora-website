@@ -28,7 +28,7 @@ const services = [
 
 const faqs = [
   {
-    q: 'Are Ayeza Cosmetics products safe for sensitive skin?',
+    q: 'Are Azeeora Cosmetics products safe for sensitive skin?',
     a: 'Yes, our products are formulated with gentle, skin-loving ingredients. However, we always recommend patch-testing any new product before full application.',
   },
   {
@@ -37,7 +37,7 @@ const faqs = [
   },
   {
     q: 'Are your products cruelty-free?',
-    a: 'Absolutely! Ayeza Cosmetics is 100% cruelty-free. We never test our formulations or ingredients on animals.',
+    a: 'Absolutely! Azeeora Cosmetics is 100% cruelty-free. We never test our formulations or ingredients on animals.',
   },
 ];
 
@@ -67,7 +67,7 @@ export default function HomeClient({
       {/* ── Wordmark opening ────────────────────────────────── */}
       <section className="px-3 sm:px-6 pt-8 lg:pt-12 pb-10 lg:pb-14 flex justify-center overflow-hidden">
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.4, ease }}>
-          <Wordmark className="text-[22vw] lg:text-[17.5vw] text-ink" opsz={96} subline="Cosmetics · Pakistan" sublineSize="max(0.055em, 9px)" />
+          <Wordmark className="text-[15vw] lg:text-[12.5vw] text-ink" opsz={96} subline="Cosmetics · Pakistan" sublineSize="max(0.075em, 9px)" />
         </motion.div>
       </section>
 
@@ -105,7 +105,7 @@ export default function HomeClient({
       {/* ── Introduction ─────────────────────────────────────── */}
       <section className="px-6 py-24 lg:py-36">
         <motion.div {...fadeUp} className="max-w-3xl mx-auto text-center">
-          <p className="caps text-muted mb-8">Ayeza · Pakistan</p>
+          <p className="caps text-muted mb-8">Azeeora · Pakistan</p>
           <p className="editorial text-[1.9rem] sm:text-[2.6rem] text-ink">
             Considered skincare, made to be used every day and kept for the way it makes you feel.
           </p>

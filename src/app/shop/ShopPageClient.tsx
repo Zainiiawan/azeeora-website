@@ -54,7 +54,7 @@ export default function ShopPage({ initialProductsData }: ShopPageClientProps) {
     <ProductListing
       title={searchQuery ? `“${searchQuery}”` : 'Shop all'}
       description={searchQuery ? undefined : 'Skincare and beauty composed in Pakistan, from cleansing rituals to night creams.'}
-      breadcrumb={[{ label: 'Ayeza', href: '/' }, { label: 'Shop all' }]}
+      breadcrumb={[{ label: 'Azeeora', href: '/' }, { label: 'Shop all' }]}
       products={data?.products ?? []}
       pagination={data?.pagination}
       isLoading={isLoading}

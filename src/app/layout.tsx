@@ -33,25 +33,25 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
-    default: "AYEZA COSMETICS | Luxury Beauty Products",
-    template: "%s | AYEZA COSMETICS",
+    default: "AZEEORA COSMETICS | Luxury Beauty Products",
+    template: "%s | AZEEORA COSMETICS",
   },
   description: "Discover premium luxury cosmetics curated for the modern woman. Shop skincare, makeup, fragrances, and more.",
   keywords: ["cosmetics", "beauty", "skincare", "makeup", "luxury", "Pakistan"],
-  authors: [{ name: "AYEZA COSMETICS" }],
+  authors: [{ name: "AZEEORA COSMETICS" }],
   manifest: "/manifest.webmanifest",
 
   openGraph: {
-    title: "AYEZA COSMETICS | Luxury Beauty Products",
+    title: "AZEEORA COSMETICS | Luxury Beauty Products",
     description: "Discover premium luxury cosmetics curated for the modern woman.",
     type: "website",
     url: APP_URL,
-    siteName: "AYEZA COSMETICS",
-    images: [{ url: "/logo.png", width: 512, height: 512, alt: "AYEZA COSMETICS" }],
+    siteName: "AZEEORA COSMETICS",
+    images: [{ url: "/logo.png", width: 512, height: 512, alt: "AZEEORA COSMETICS" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AYEZA COSMETICS | Luxury Beauty Products",
+    title: "AZEEORA COSMETICS | Luxury Beauty Products",
     description: "Discover premium luxury cosmetics curated for the modern woman.",
     images: ["/logo.png"],
   },
@@ -72,7 +72,7 @@ export default function RootLayout({
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "AYEZA COSMETICS",
+    name: "AZEEORA COSMETICS",
     url: APP_URL,
     logo: `${APP_URL}/logo.png`,
     sameAs: [
@@ -102,7 +102,7 @@ export default function RootLayout({
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "AYEZA COSMETICS",
+    name: "AZEEORA COSMETICS",
     url: APP_URL,
     potentialAction: {
       "@type": "SearchAction",

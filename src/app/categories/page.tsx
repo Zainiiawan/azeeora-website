@@ -16,7 +16,7 @@ export default function CategoriesPage() {
     <div className="bg-white">
       <section className="px-5 sm:px-8 lg:px-10 pt-14 pb-12 border-b border-line">
         <nav className="caps-sm text-muted mb-8 flex gap-2" aria-label="Breadcrumb">
-          <Link href="/" className="hover:text-ink">Ayeza</Link>
+          <Link href="/" className="hover:text-ink">Azeeora</Link>
           <span>/</span>
           <span className="text-ink">Collections</span>
         </nav>

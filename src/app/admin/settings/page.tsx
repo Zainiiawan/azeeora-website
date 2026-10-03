@@ -198,7 +198,7 @@ export default function AdminSettingsPage() {
             </div>
             <div>
               <h2 className="font-semibold text-black">Store</h2>
-              <p className="text-sm text-gray-500">AYEZA COSMETICS platform</p>
+              <p className="text-sm text-gray-500">AZEEORA COSMETICS platform</p>
             </div>
           </div>
           <div className="space-y-3 text-sm">

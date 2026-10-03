@@ -3,14 +3,14 @@ import { config } from '@/lib/config';
 import ContactPageClient from './ContactPageClient';
 
 export const metadata: Metadata = {
-  title: 'Contact Us | AYEZA COSMETICS',
-  description: 'Get in touch with AYEZA COSMETICS for orders, product advice, or partnership enquiries. We are here to help.',
+  title: 'Contact Us | AZEEORA COSMETICS',
+  description: 'Get in touch with AZEEORA COSMETICS for orders, product advice, or partnership enquiries. We are here to help.',
   alternates: {
     canonical: '/contact',
   },
   openGraph: {
-    title: 'Contact Us | AYEZA COSMETICS',
-    description: 'Get in touch with AYEZA COSMETICS for orders, product advice, or partnership enquiries.',
+    title: 'Contact Us | AZEEORA COSMETICS',
+    description: 'Get in touch with AZEEORA COSMETICS for orders, product advice, or partnership enquiries.',
     url: '/contact',
     type: 'website',
   },
@@ -20,8 +20,8 @@ export default function ContactPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ContactPage',
-    name: 'Contact AYEZA COSMETICS',
-    description: 'Get in touch with AYEZA COSMETICS for orders, product advice, or partnership enquiries.',
+    name: 'Contact AZEEORA COSMETICS',
+    description: 'Get in touch with AZEEORA COSMETICS for orders, product advice, or partnership enquiries.',
     url: `${config.getBaseUrl()}/contact`,
   };
 

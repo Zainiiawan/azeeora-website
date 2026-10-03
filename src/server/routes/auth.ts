@@ -132,7 +132,7 @@ router.post('/verify-otp', validate(verifyOtpSchema), async ({ body }) => {
 
   return json({
     success: true,
-    message: 'Email verified successfully. Welcome to AYEZA COSMETICS!',
+    message: 'Email verified successfully. Welcome to AZEEORA COSMETICS!',
     data: { user: publicUser(user), tokens },
   });
 });

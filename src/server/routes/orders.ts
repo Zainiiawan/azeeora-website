@@ -105,7 +105,7 @@ function deductStock(product: Doc, item: { variant?: string; sku?: string; quant
 
 async function nextOrderNumber() {
   const count = await db.orders.count();
-  return `AYZ-${Date.now()}-${String(count + 1).padStart(4, '0')}`;
+  return `AZR-${Date.now()}-${String(count + 1).padStart(4, '0')}`;
 }
 
 const pagination = (page: number, limit: number, total: number) => {
@@ -265,7 +265,7 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
   }
 
   try {
-    await sendNewOrderNotificationEmail(process.env.ADMIN_EMAIL || 'ayezacosmtics@gmail.com', order);
+    await sendNewOrderNotificationEmail(process.env.ADMIN_EMAIL || 'azeeoracosmetics@gmail.com', order);
   } catch {
     // ignore
   }

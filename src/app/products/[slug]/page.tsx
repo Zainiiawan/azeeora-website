@@ -58,21 +58,21 @@ export async function generateMetadata({
   if (!product) {
     const fallbackName = slug ? slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Product';
     return {
-      title: `${fallbackName} | AYEZA COSMETICS`,
-      description: `Shop ${fallbackName} at AYEZA COSMETICS. Premium luxury cosmetics curated for the modern woman.`,
+      title: `${fallbackName} | AZEEORA COSMETICS`,
+      description: `Shop ${fallbackName} at AZEEORA COSMETICS. Premium luxury cosmetics curated for the modern woman.`,
     };
   }
 
-  let title = product.seo?.metaTitle || `${product.name} | AYEZA COSMETICS`;
+  let title = product.seo?.metaTitle || `${product.name} | AZEEORA COSMETICS`;
   let description =
     product.seo?.metaDescription ||
     product.shortDescription ||
     product.description?.slice(0, 155) ||
     'Premium luxury cosmetics curated for the modern woman.';
   
-  if (product.name === 'Ayeza Beauty Cream' || product.slug === 'ayeza-beauty-cream') {
-    title = 'Ayeza Beauty Cream - Whitening Cream in Pakistan | Ayeza Cosmetics';
-    description = 'Buy Ayeza Beauty Cream online in Pakistan. Premium skincare designed for brighter, healthier-looking skin with fast nationwide delivery from Ayeza Cosmetics.';
+  if (product.name === 'Azeeora Beauty Cream' || product.slug === 'azeeora-beauty-cream') {
+    title = 'Azeeora Beauty Cream - Whitening Cream in Pakistan | Azeeora Cosmetics';
+    description = 'Buy Azeeora Beauty Cream online in Pakistan. Premium skincare designed for brighter, healthier-looking skin with fast nationwide delivery from Azeeora Cosmetics.';
   }
   
   const images = product.images?.map((img: any) => img.url) || ['/logo.png'];
@@ -126,11 +126,11 @@ export default async function ProductPageServer({ params }: { params: Promise<{ 
       '@type': 'Product',
       name: product.name,
       description: product.description || product.shortDescription,
-      image: product.images?.map((img: any) => img.url),
+      image: product.images?.map((img: any) => (img.url?.startsWith("/") ? `${config.getBaseUrl()}${img.url}` : img.url)),
       sku: product.sku,
       brand: {
         '@type': 'Brand',
-        name: typeof product.brand === 'object' ? product.brand?.name : (product.brand || 'AYEZA COSMETICS'),
+        name: typeof product.brand === 'object' ? product.brand?.name : (product.brand || 'AZEEORA COSMETICS'),
       },
       offers: {
         '@type': 'Offer',

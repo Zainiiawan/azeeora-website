@@ -9,7 +9,7 @@ import { contactApi } from '@/lib/api/contactApi';
 const CONTACT = {
   phone: '+92 306 0466911',
   whatsapp: '923060466911',
-  email: 'ayezacosmtics@gmail.com',
+  email: 'azeeoracosmetics@gmail.com',
   city: 'Sahiwal',
   country: 'Pakistan',
   address: 'Sahiwal, Punjab, Pakistan',
@@ -97,7 +97,7 @@ export default function ContactPage() {
           <div className="bg-white rounded-xl overflow-hidden shadow-sm h-64 flex items-center justify-center border border-gray-200">
             <div className="text-center text-gray-500 p-6">
               <MapPin className="w-10 h-10 text-rose-gold mx-auto mb-3" />
-              <p className="font-medium text-gray-700">AYEZA COSMETICS</p>
+              <p className="font-medium text-gray-700">AZEEORA COSMETICS</p>
               <p className="text-sm">{CONTACT.city}, {CONTACT.country}</p>
               <p className="text-xs mt-2 text-gray-400">Google Maps embed ready for production</p>
             </div>

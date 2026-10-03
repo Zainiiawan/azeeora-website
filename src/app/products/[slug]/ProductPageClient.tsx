@@ -22,7 +22,7 @@ import { Minus, Plus } from 'lucide-react';
 import ProductSeoContent from '@/components/products/ProductSeoContent';
 
 const PLACEHOLDER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f3f2ef'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%23111111'%3EAYEZA%3C/text%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect width='400' height='400' fill='%23f3f2ef'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%23111111'%3EAZEEORA%3C/text%3E%3C/svg%3E";
 
 export default function ProductPageClient({ initialProductData }: { initialProductData?: any }) {
   const params = useParams();
@@ -131,8 +131,8 @@ export default function ProductPageClient({ initialProductData }: { initialProdu
     if (typeof window === 'undefined') return;
     const url = window.location.href;
     const shareData = {
-      title: `${product?.name} | AYEZA COSMETICS`,
-      text: product?.shortDescription || 'Check out this product from AYEZA COSMETICS!',
+      title: `${product?.name} | AZEEORA COSMETICS`,
+      text: product?.shortDescription || 'Check out this product from AZEEORA COSMETICS!',
       url,
     };
     try {

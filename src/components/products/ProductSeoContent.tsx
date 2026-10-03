@@ -1,13 +1,13 @@
 import React from 'react';
 
 export default function ProductSeoContent({ slug }: { slug: string }) {
-  if (slug === 'ayeza-beauty-cream') {
+  if (slug === 'azeeora-beauty-cream') {
     return (
       <div className="mt-16 border-t border-gray-200 pt-16 pb-8">
         <div className="container mx-auto px-4 max-w-4xl prose prose-rose">
           <h2 className="text-3xl font-serif font-bold text-black mb-6">The Best Beauty Cream in Pakistan for Glowing Skin</h2>
           <p className="text-gray-600 mb-6 text-lg">
-            Experience the ultimate transformation with <strong>Ayeza Beauty Cream</strong>. Formulated with premium ingredients, this cream targets dark spots, uneven skin tone, and dullness to reveal a radiant, flawless complexion. Whether you are dealing with hyperpigmentation or simply want to enhance your natural glow, our beauty cream is the perfect addition to your daily skincare routine.
+            Experience the ultimate transformation with <strong>Azeeora Beauty Cream</strong>. Formulated with premium ingredients, this cream targets dark spots, uneven skin tone, and dullness to reveal a radiant, flawless complexion. Whether you are dealing with hyperpigmentation or simply want to enhance your natural glow, our beauty cream is the perfect addition to your daily skincare routine.
           </p>
 
           <div className="grid md:grid-cols-2 gap-8 my-10">
@@ -24,15 +24,15 @@ export default function ProductSeoContent({ slug }: { slug: string }) {
             <div className="bg-gray-50 p-6 rounded-xl">
               <h3 className="text-xl font-bold text-black mb-4">Who is it suitable for?</h3>
               <p className="text-gray-700">
-                Ayeza Beauty Cream is suitable for all skin types, including dry, oily, combination, and normal skin. It is specially formulated for those looking to combat dullness and achieve a radiant glow without clogging pores.
+                Azeeora Beauty Cream is suitable for all skin types, including dry, oily, combination, and normal skin. It is specially formulated for those looking to combat dullness and achieve a radiant glow without clogging pores.
               </p>
             </div>
           </div>
 
           <h3 className="text-2xl font-bold text-black mb-4">How to Use</h3>
           <ol className="list-decimal pl-5 space-y-2 text-gray-700 mb-10">
-            <li>Cleanse your face thoroughly with Ayeza Face Wash.</li>
-            <li>Pat dry and apply a small amount of Ayeza Beauty Cream.</li>
+            <li>Cleanse your face thoroughly with Azeeora Face Wash.</li>
+            <li>Pat dry and apply a small amount of Azeeora Beauty Cream.</li>
             <li>Gently massage into the skin using upward circular motions.</li>
             <li>Use twice daily, morning and night, for best results.</li>
           </ol>
@@ -40,7 +40,7 @@ export default function ProductSeoContent({ slug }: { slug: string }) {
           <h3 className="text-2xl font-bold text-black mb-6">Frequently Asked Questions</h3>
           <div className="space-y-6">
             <div>
-              <h4 className="font-bold text-lg text-black">Does Ayeza Beauty Cream contain harmful chemicals?</h4>
+              <h4 className="font-bold text-lg text-black">Does Azeeora Beauty Cream contain harmful chemicals?</h4>
               <p className="text-gray-600">No, our beauty cream is free from harmful bleaching agents, mercury, and harsh chemicals. We prioritize safe, effective, and ethically sourced ingredients.</p>
             </div>
             <div>
@@ -64,7 +64,7 @@ export default function ProductSeoContent({ slug }: { slug: string }) {
               "mainEntity": [
                 {
                   "@type": "Question",
-                  "name": "Does Ayeza Beauty Cream contain harmful chemicals?",
+                  "name": "Does Azeeora Beauty Cream contain harmful chemicals?",
                   "acceptedAnswer": {
                     "@type": "Answer",
                     "text": "No, our beauty cream is free from harmful bleaching agents, mercury, and harsh chemicals. We prioritize safe, effective, and ethically sourced ingredients."
@@ -94,13 +94,13 @@ export default function ProductSeoContent({ slug }: { slug: string }) {
     );
   }
 
-  if (slug === 'ayeza-radiance-face-wash' || slug === 'ayeza-face-wash') {
+  if (slug === 'azeeora-radiance-face-wash' || slug === 'azeeora-face-wash') {
     return (
       <div className="mt-16 border-t border-gray-200 pt-16 pb-8">
         <div className="container mx-auto px-4 max-w-4xl prose prose-rose">
           <h2 className="text-3xl font-serif font-bold text-black mb-6">The Best Face Wash for Glowing, Clear Skin</h2>
           <p className="text-gray-600 mb-6 text-lg">
-            Start and end your day right with the <strong>Ayeza Radiance Face Wash</strong>. Designed to deeply cleanse without stripping your skin of its natural moisture, this face wash is your first step towards a flawless complexion. It effectively removes dirt, oil, and makeup residue, leaving your face feeling fresh, balanced, and rejuvenated.
+            Start and end your day right with the <strong>Azeeora Radiance Face Wash</strong>. Designed to deeply cleanse without stripping your skin of its natural moisture, this face wash is your first step towards a flawless complexion. It effectively removes dirt, oil, and makeup residue, leaving your face feeling fresh, balanced, and rejuvenated.
           </p>
 
           <div className="grid md:grid-cols-2 gap-8 my-10">
@@ -125,9 +125,9 @@ export default function ProductSeoContent({ slug }: { slug: string }) {
           <h3 className="text-2xl font-bold text-black mb-4">How to Use</h3>
           <ol className="list-decimal pl-5 space-y-2 text-gray-700 mb-10">
             <li>Dampen your face with lukewarm water.</li>
-            <li>Take a small amount of Ayeza Radiance Face Wash and work into a lather.</li>
+            <li>Take a small amount of Azeeora Radiance Face Wash and work into a lather.</li>
             <li>Gently massage onto your face in circular motions for 30-60 seconds.</li>
-            <li>Rinse thoroughly and pat dry with a clean towel. Follow with your favorite Ayeza serum.</li>
+            <li>Rinse thoroughly and pat dry with a clean towel. Follow with your favorite Azeeora serum.</li>
           </ol>
         </div>
       </div>

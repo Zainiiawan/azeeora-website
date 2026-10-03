@@ -338,7 +338,7 @@ contact.post(
       from: process.env.EMAIL_FROM || user,
       to: process.env.ADMIN_EMAIL || STORE_CONTACT.email,
       replyTo: email,
-      subject: `[AYEZA Contact] ${subject}`,
+      subject: `[AZEEORA Contact] ${subject}`,
       html: `
         <h2>New Contact Message</h2>
         <p><strong>Name:</strong> ${escapeHtml(name)}</p>

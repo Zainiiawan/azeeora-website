@@ -12,10 +12,10 @@ import postgres from 'postgres';
 
 type Sql = postgres.Sql<Record<string, unknown>>;
 
-const globalForDb = globalThis as unknown as { __ayezaSql?: Sql };
+const globalForDb = globalThis as unknown as { __azeeoraSql?: Sql };
 
 export function getSql(): Sql {
-  if (globalForDb.__ayezaSql) return globalForDb.__ayezaSql;
+  if (globalForDb.__azeeoraSql) return globalForDb.__azeeoraSql;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not set');
   const isLocal = /localhost|127\.0\.0\.1/.test(url);
@@ -27,7 +27,7 @@ export function getSql(): Sql {
     connect_timeout: 15,
     ssl: isLocal ? false : 'require',
   });
-  globalForDb.__ayezaSql = client;
+  globalForDb.__azeeoraSql = client;
   return client;
 }
 

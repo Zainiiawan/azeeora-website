@@ -105,7 +105,7 @@ export default function AdminDashboard() {
         <button onClick={() => setSidebarOpen(true)} className="text-gray-600">
           <Menu className="w-6 h-6" />
         </button>
-        <h1 className="text-lg font-serif font-bold text-black">AYEZA Admin</h1>
+        <h1 className="text-lg font-serif font-bold text-black">AZEEORA Admin</h1>
         <button className="text-gray-600">
           <Bell className="w-6 h-6" />
         </button>
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
           <div className="flex flex-col h-full">
             <div className="p-6 border-b border-gray-200">
               <h1 className="text-xl font-serif font-bold text-black">
-                AYEZA <span className="text-rose-gold">Admin</span>
+                AZEEORA <span className="text-rose-gold">Admin</span>
               </h1>
             </div>
 
@@ -147,7 +147,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <p className="font-medium text-black">{user?.firstName ?? 'Admin'}</p>
-                  <p className="text-sm text-gray-500">{user?.email ?? 'admin@ayeza.com'}</p>
+                  <p className="text-sm text-gray-500">{user?.email ?? 'azeeoracosmetics@gmail.com'}</p>
                 </div>
               </div>
               <button

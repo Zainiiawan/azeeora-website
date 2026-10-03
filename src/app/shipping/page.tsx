@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { Truck, Clock, ShieldCheck, MapPin } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Shipping Policy | AYEZA COSMETICS',
+  title: 'Shipping Policy | AZEEORA COSMETICS',
   description: 'Learn about our shipping and delivery processes across Pakistan.',
   alternates: {
     canonical: '/shipping',
   },
   openGraph: {
-    title: 'Shipping Policy | AYEZA COSMETICS',
+    title: 'Shipping Policy | AZEEORA COSMETICS',
     description: 'Learn about our shipping and delivery processes across Pakistan.',
     url: '/shipping',
     type: 'website',
@@ -21,7 +21,7 @@ export default function ShippingPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'Shipping Policy - AYEZA COSMETICS',
+    name: 'Shipping Policy - AZEEORA COSMETICS',
     description: 'Learn about our shipping and delivery processes across Pakistan.',
     url: `${config.getBaseUrl()}/shipping`,
   };
@@ -100,7 +100,7 @@ export default function ShippingPage() {
           </ul>
 
           <div className="mt-8 pt-8 border-t border-gray-100">
-            <p>Need help with your delivery? Contact our support team at <a href="mailto:ayezacosmtics@gmail.com" className="text-rose-gold font-medium">ayezacosmtics@gmail.com</a> or call <a href="tel:+923060466911" className="text-rose-gold font-medium">+92 306 0466911</a>.</p>
+            <p>Need help with your delivery? Contact our support team at <a href="mailto:azeeoracosmetics@gmail.com" className="text-rose-gold font-medium">azeeoracosmetics@gmail.com</a> or call <a href="tel:+923060466911" className="text-rose-gold font-medium">+92 306 0466911</a>.</p>
           </div>
         </div>
 

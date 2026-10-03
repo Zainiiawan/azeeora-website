@@ -28,7 +28,7 @@ export async function generateMetadata(
 
   if (!post) {
     return {
-      title: 'Post Not Found | Ayeza Cosmetics',
+      title: 'Post Not Found | Azeeora Cosmetics',
     };
   }
 
@@ -36,7 +36,7 @@ export async function generateMetadata(
   const canonicalUrl = `${config.getBaseUrl()}/blog/${post.slug}`;
 
   return {
-    title: `${post.title} | Ayeza Cosmetics Blog`,
+    title: `${post.title} | Azeeora Cosmetics Blog`,
     description: post.excerpt,
     alternates: {
       canonical: canonicalUrl,
@@ -134,7 +134,7 @@ export default async function BlogPostPage({ params }: Props) {
     ],
     publisher: {
       '@type': 'Organization',
-      name: 'Ayeza Cosmetics',
+      name: 'Azeeora Cosmetics',
       logo: {
         '@type': 'ImageObject',
         url: `${config.getBaseUrl()}/icon.png`,

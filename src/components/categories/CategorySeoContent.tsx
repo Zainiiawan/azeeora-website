@@ -10,9 +10,9 @@ export default function CategorySeoContent({ slug }: { slug: string }) {
             Finding the right cleanser is the most critical step in any skincare routine, especially if you struggle with oily, acne-prone, or sensitive skin. Our collection of premium face washes is expertly formulated to gently purify your skin, remove excess sebum, and unclog pores without causing dryness or irritation.
           </p>
 
-          <h3 className="text-2xl font-bold text-black mb-4">Why Choose Ayeza Face Washes?</h3>
+          <h3 className="text-2xl font-bold text-black mb-4">Why Choose Azeeora Face Washes?</h3>
           <p className="text-gray-700 mb-6">
-            Unlike harsh, stripping cleansers that damage your moisture barrier, Ayeza face washes are balanced to maintain your skin's natural pH. Whether you need a daily gentle cleanser or a targeted acne-control wash, our products contain soothing botanical extracts and active ingredients that leave your skin feeling fresh and radiant.
+            Unlike harsh, stripping cleansers that damage your moisture barrier, Azeeora face washes are balanced to maintain your skin's natural pH. Whether you need a daily gentle cleanser or a targeted acne-control wash, our products contain soothing botanical extracts and active ingredients that leave your skin feeling fresh and radiant.
           </p>
 
           <h3 className="text-2xl font-bold text-black mb-6">Frequently Asked Questions</h3>
