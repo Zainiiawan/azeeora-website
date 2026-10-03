@@ -31,8 +31,8 @@ const BlogSidebar = ({ categories, tags, searchQuery, onSearchChange }: BlogSide
       <div className="bg-white p-6 rounded-xl shadow-sm luxury-border">
         <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4">Categories</h3>
         <ul className="flex flex-col gap-3">
-          {categories.map((category) => (
-            <li key={category}>
+          {categories.map((category, i) => (
+            <li key={`${category}-${i}`}>
               <button className="text-sm text-gray-600 hover:text-rose-gold transition-colors flex items-center justify-between w-full">
                 <span>{category}</span>
               </button>
@@ -47,9 +47,9 @@ const BlogSidebar = ({ categories, tags, searchQuery, onSearchChange }: BlogSide
           <Tag className="w-4 h-4" /> Popular Tags
         </h3>
         <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
+          {tags.map((tag, i) => (
             <button
-              key={tag}
+              key={`${tag}-${i}`}
               className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-full text-xs text-gray-600 hover:border-rose-gold hover:text-rose-gold transition-colors"
             >
               {tag}

@@ -243,8 +243,8 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="mt-12 pt-8 border-t border-gray-200">
               <div className="flex flex-wrap gap-2">
                 <span className="text-sm font-bold text-gray-900 mr-2 py-1">Tags:</span>
-                {post.tags.map(tag => (
-                  <span key={tag} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-600">
+                {post.tags.map((tag, i) => (
+                  <span key={`${tag}-${i}`} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-600">
                     {tag}
                   </span>
                 ))}

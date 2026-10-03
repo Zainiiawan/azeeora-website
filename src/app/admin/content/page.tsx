@@ -70,7 +70,7 @@ function ContentAdmin() {
 function Campaigns() {
   const qc = useQueryClient();
   const { data = [] } = useQuery({ queryKey: ['admin-campaigns'], queryFn: extrasApi.campaigns.list });
-  const { data: products } = useQuery({ queryKey: ['admin-campaign-products'], queryFn: () => productApi.getAll({ limit: 200, sortBy: 'name_asc' }) });
+  const { data: products } = useQuery({ queryKey: ['admin-campaign-products'], queryFn: () => productApi.getAll({ limit: 100, sortBy: 'name_asc' }) });
   const blank = (): Partial<Campaign> => ({ name: '', description: '', image: '', discountPct: 10, productIds: [], startDate: new Date().toISOString().slice(0, 10), endDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10), isActive: true });
   const [form, setForm] = useState<Partial<Campaign> | null>(null);
   const save = useMutation({

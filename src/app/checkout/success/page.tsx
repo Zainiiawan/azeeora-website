@@ -5,10 +5,18 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, Package, ArrowRight, Home } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams?.get('orderId') || '';
+  const orderNumber = searchParams?.get('orderNumber') || '';
+  const email = searchParams?.get('email') || '';
+  const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
+  const trackHref = isAuthenticated && orderId
+    ? `/account/orders/${orderId}`
+    : `/track-order?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(email)}`;
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
@@ -22,20 +30,20 @@ function SuccessContent() {
           <p className="text-gray-500">Thank you for your purchase. Your order has been received and is being processed.</p>
         </div>
 
-        {orderId && (
+        {(orderNumber || orderId) && (
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <p className="text-sm text-gray-500 mb-1">Order Number</p>
-            <p className="font-mono font-medium text-lg text-gray-900">#{orderId.slice(-6).toUpperCase()}</p>
+            <p className="font-mono font-medium text-lg text-gray-900 break-all">{orderNumber || `#${orderId.slice(-6).toUpperCase()}`}</p>
           </div>
         )}
 
         <p className="text-sm text-gray-500">
-          We've sent a confirmation email with your order details and tracking information.
+          Please keep your order number. You can track your order any time with it and your email address.
         </p>
 
         <div className="pt-6 space-y-3">
-          {orderId && (
-            <Link href={`/account/orders/${orderId}`} className="block w-full">
+          {(orderId || orderNumber) && (
+            <Link href={trackHref} className="block w-full">
               <Button className="w-full" size="lg">
                 <Package className="w-4 h-4 mr-2" /> Track Order
               </Button>

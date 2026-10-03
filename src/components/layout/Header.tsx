@@ -16,6 +16,12 @@ import { cn, displayName } from '@/lib/utils';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
+const STRIP = [
+  'Free delivery across Pakistan on orders over Rs 5,000',
+  'Cash on delivery · JazzCash · Easypaisa',
+  'Become a Brand Partner and earn on every order',
+];
+
 const secondary = [
   { name: 'Our story', href: '/about' },
   { name: 'Journal', href: '/blog' },
@@ -31,6 +37,11 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  const [strip, setStrip] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setStrip((n) => (n + 1) % STRIP.length), 5000);
+    return () => clearInterval(t);
+  }, []);
 
   const { user, isAuthenticated } = useSelector((s: RootState) => s.auth);
   const bagCount = useSelector((s: RootState) => s.cart.items.reduce((n, i) => n + i.quantity, 0));
@@ -83,12 +94,20 @@ const Header = () => {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50" onMouseLeave={() => setShopOpen(false)}>
-      {/* Brand strip */}
-      <div className="h-8 bg-blush text-ink flex items-center justify-center px-4">
-        <p className="text-[0.72rem] tracking-[0.08em] uppercase text-center truncate">
-          <span className="sm:hidden">Free delivery over PKR 5,000</span>
-          <span className="hidden sm:inline">Free delivery across Pakistan on orders over PKR 5,000 · Cash on delivery</span>
-        </p>
+      {/* Brand strip: a few messages that fade in turn */}
+      <div className="h-8 bg-ink text-white flex items-center justify-center px-4 overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={strip}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.5 }}
+            className="text-[0.7rem] tracking-[0.16em] uppercase text-center truncate"
+          >
+            {STRIP[strip]}
+          </motion.p>
+        </AnimatePresence>
       </div>
 
       <div className="bg-white border-b border-line">

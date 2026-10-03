@@ -1,4 +1,4 @@
-import { db, Doc } from './db';
+import { db, getSql, Doc } from './db';
 import { logger } from './logger';
 
 const asDate = (v: unknown) => (v ? new Date(v as string) : undefined);
@@ -134,19 +134,51 @@ export async function notifyAdmins(params: NotificationInput) {
   }
 }
 
+/**
+ * Take stock for one order line in a single statement (never below zero), so two
+ * checkouts can't both buy the last unit. Products with variants also move the
+ * variant's own stock. Returns false if there isn't enough.
+ */
+export async function takeStock(productId: string, quantity: number, variantKey?: string): Promise<boolean> {
+  const sql = getSql();
+  const now = new Date().toISOString();
+  const rows = await sql`
+    update products set
+      data = jsonb_set(jsonb_set(data, '{stock}', to_jsonb(coalesce((data->>'stock')::numeric, 0) - ${quantity}::numeric)),
+                       '{soldCount}', to_jsonb(coalesce((data->>'soldCount')::numeric, 0) + ${quantity}::numeric)),
+      updated_at = ${now}
+    where _id = ${productId} and coalesce((data->>'stock')::numeric, 0) >= ${quantity}::numeric
+    returning _id`;
+  if (!rows.length) return false;
+  if (variantKey) await moveVariantStock(productId, variantKey, -quantity);
+  return true;
+}
+
+async function moveVariantStock(productId: string, variantKey: string, delta: number) {
+  const product = await db.products.findById(productId);
+  const variants: any[] = product?.variants ?? [];
+  const i = variants.findIndex((v) => v.sku === variantKey || v.value === variantKey);
+  if (i < 0) return;
+  const sql = getSql();
+  await sql`update products set data = jsonb_set(data, ${['variants', String(i), 'stock']}::text[],
+      to_jsonb(greatest(0, coalesce((data#>>${['variants', String(i), 'stock']}::text[])::numeric, 0) + ${delta}::numeric)))
+    where _id = ${productId}`;
+}
+
+/** Give stock back for one line (cancel, refund, failed checkout). */
+export async function returnStock(productId: string, quantity: number, variantKey?: string) {
+  const sql = getSql();
+  const now = new Date().toISOString();
+  await sql`
+    update products set
+      data = jsonb_set(jsonb_set(data, '{stock}', to_jsonb(coalesce((data->>'stock')::numeric, 0) + ${quantity}::numeric)),
+                       '{soldCount}', to_jsonb(greatest(0, coalesce((data->>'soldCount')::numeric, 0) - ${quantity}::numeric))),
+      updated_at = ${now}
+    where _id = ${productId}`;
+  if (variantKey) await moveVariantStock(productId, variantKey, quantity);
+}
+
 /** Return stock for every line of an order (used on cancel/refund/delete/edit). */
 export async function restockOrderItems(items: Doc[]) {
-  for (const item of items) {
-    const product = await db.products.findById(item.product);
-    if (!product) continue;
-    if (item.variant) {
-      const variant = (product.variants ?? []).find(
-        (v: any) => v.sku === item.variant || v.value === item.variant || v.sku === item.sku
-      );
-      if (variant) variant.stock = (variant.stock ?? 0) + item.quantity;
-    }
-    product.stock = (product.stock ?? 0) + item.quantity;
-    product.soldCount = Math.max(0, (product.soldCount ?? 0) - item.quantity);
-    await db.products.save(product);
-  }
+  for (const item of items) await returnStock(String(item.product), Number(item.quantity), item.variant);
 }

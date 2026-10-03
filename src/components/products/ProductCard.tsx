@@ -180,7 +180,7 @@ const ProductCard = ({ product, className, priority = false }: ProductCardProps)
         )}
         {label && <p className="caps-sm text-muted mb-1 truncate">{label}</p>}
         <Link href={`/products/${product.slug}`}>
-          <h3 className="text-[0.95rem] font-light text-ink leading-snug line-clamp-2 hover:underline underline-offset-4">{product.name}</h3>
+          <h3 className="font-serif text-[1.2rem] text-ink leading-snug line-clamp-2 hover:underline underline-offset-4 decoration-1">{product.name}</h3>
         </Link>
         <p className="mt-2 text-[0.95rem]">
           <span className={cn('font-medium', onSale ? 'text-sale' : 'text-ink')}>{formatPrice(effectivePrice)}</span>

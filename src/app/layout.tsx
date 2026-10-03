@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Bodoni_Moda, Jost } from "next/font/google";
+import { Cormorant_Garamond, Jost } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers/Providers";
 import { ConditionalSiteChrome } from "@/components/layout/ConditionalSiteChrome";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 
-const display = Bodoni_Moda({
+// Display serif for headlines (the luxury-house accent), Jost for everything else
+const display = Cormorant_Garamond({
   variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
-  axes: ["opsz"],
   display: "swap",
 });
 

@@ -14,12 +14,40 @@ import { mapApiCartToReduxItems } from '@/lib/cartUtils';
 import { Product } from '@/lib/api/productApi';
 import { LazyMotion, domAnimation } from 'framer-motion';
 
+const GUEST_KEY = 'azr_guest_bag';
+
 function AuthHydrator({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch<AppDispatch>();
+
+  // Save the bag and wishlist whenever they change (after the first load)
+  useEffect(() => {
+    let last = '';
+    return store.subscribe(() => {
+      const st = store.getState();
+      if (!st.auth.isHydrated) return;
+      const next = JSON.stringify({ items: st.cart.items, couponCode: st.cart.couponCode, wishlist: st.wishlist.items });
+      if (next === last) return;
+      last = next;
+      try {
+        localStorage.setItem(GUEST_KEY, next);
+      } catch {
+        // storage full or blocked
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
     if (!accessToken) {
+      // Guests keep their bag and wishlist on this device between visits
+      try {
+        const saved = JSON.parse(localStorage.getItem(GUEST_KEY) || 'null');
+        if (saved?.items?.length) dispatch(setCartItems(saved.items));
+        if (saved?.couponCode) dispatch(setCouponCode(saved.couponCode));
+        if (saved?.wishlist?.length) dispatch(setWishlistItems(saved.wishlist));
+      } catch {
+        // storage unavailable
+      }
       dispatch(setHydrated());
       return;
     }

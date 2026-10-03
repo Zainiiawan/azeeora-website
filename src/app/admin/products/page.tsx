@@ -260,7 +260,9 @@ export default function AdminProductsPage() {
       handleCloseModal();
     } catch (error: unknown) {
       const msg =
+        (error as { response?: { data?: { message?: string; errors?: { field: string; message: string }[] } } })?.response?.data?.errors?.map((e) => `${e.field}: ${e.message}`).join(', ') ||
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        (error instanceof Error && !('response' in error) ? error.message : '') ||
         'Failed to save product. Check all fields and try again.';
       setSaveError(msg);
       console.error('Failed to save product:', error);
@@ -411,8 +413,13 @@ export default function AdminProductsPage() {
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex-shrink-0 mr-3 flex items-center justify-center">
-                          <ImageIcon className="w-5 h-5 text-gray-400" />
+                        <div className="w-12 h-12 bg-gray-100 rounded-lg flex-shrink-0 mr-3 flex items-center justify-center overflow-hidden">
+                          {product.images?.[0]?.url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={product.images[0].url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon className="w-5 h-5 text-gray-400" />
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-black">{product.name}</p>

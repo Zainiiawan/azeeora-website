@@ -37,13 +37,12 @@ const createTransporter = () => {
     socketTimeout: 15000,
     connectionTimeout: 15000,
     greetingTimeout: 15000,
-    tls: { rejectUnauthorized: false }
   });
   
   return transporterInstance;
 };
 
-const canSendEmail = (): boolean => {
+export const canSendEmail = (): boolean => {
   if (process.env.RESEND_API_KEY) return true;
   return Boolean((process.env.EMAIL_USER || '').trim() && (process.env.EMAIL_PASSWORD || '').trim());
 };

@@ -79,6 +79,7 @@ const SENSITIVE_USER_FIELDS = [
   'otpLastSent',
   'passwordResetToken',
   'passwordResetExpiry',
+  'passwordResetAttempts',
 ];
 
 /** Same as the old User model's toJSON transform. */

@@ -232,7 +232,7 @@ export default function ProductPageClient({ initialProductData }: { initialProdu
           {/* Details */}
           <div className="lg:pt-2">
             {(brandName || categoryName) && <p className="caps-sm text-muted mb-2">{brandName || categoryName}</p>}
-            <h1 className="font-light text-[1.8rem] sm:text-[2.3rem] leading-tight text-ink">{product.name}</h1>
+            <h1 className="font-serif text-[2.2rem] sm:text-[2.9rem] leading-[1.05] text-ink">{product.name}</h1>
 
             <a href="#reviews" className="mt-3 inline-flex items-center gap-2 text-[0.85rem] text-ink">
               <span className="flex">

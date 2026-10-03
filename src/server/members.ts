@@ -308,7 +308,10 @@ export async function onOrderStatusChange(order: Doc, previousStatus: string) {
       if (entries.length) await postCredits(entries);
       if (order.user && m.pointsRedeemed > 0) await bumpUserCounter(order.user, 'loyaltyPoints', m.pointsRedeemed);
       if (order.user && m.pointsCredited && m.pointsEarned > 0) {
-        await bumpUserCounter(order.user, 'loyaltyPoints', -m.pointsEarned);
+        // Take back what's left if some of the earned points were already spent
+        const u = await db.users.findById(order.user);
+        const back = Math.min(m.pointsEarned, Number(u?.loyaltyPoints ?? 0));
+        if (back > 0) await bumpUserCounter(order.user, 'loyaltyPoints', -back);
       }
       if (order.user && m.bv && m.buyerType === 'partner' && !m.bvReversed) {
         await bumpUserCounter(order.user, 'monthlyBV', -m.bv);

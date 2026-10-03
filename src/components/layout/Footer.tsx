@@ -71,7 +71,7 @@ const Footer = ({ className }: { className?: string }) => {
     <footer className={`bg-[#1a1a1a] text-white mt-10 ${className || ''}`}>
       <div className="px-5 sm:px-8 lg:px-10 pt-16 pb-12 grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-12">
         <div className="col-span-2 lg:col-span-6">
-          <p className="text-[1.5rem] font-light mb-3">Stay in the know</p>
+          <p className="font-serif text-[2rem] mb-3">Stay in the <em className="italic">know</em></p>
           <p className="text-sm text-white/70 font-light mb-6 max-w-sm">New launches, rituals and private offers, a few times a season.</p>
           <NewsletterForm />
           <div className="flex gap-3 mt-10">

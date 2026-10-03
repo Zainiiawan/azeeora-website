@@ -51,6 +51,11 @@ reviews.get('/:productId/stats', async ({ params }) => {
 reviews.get('/:productId', async ({ params }) => {
   const list = await db.reviews.find({ product: params.productId, isApproved: true }, { sort: { createdAt: -1 } });
   await populate(list, 'user', db.users, ['firstName', 'lastName', 'avatar']);
+  // Public feed: never expose reviewers' emails or who voted
+  for (const r of list) {
+    delete r.guestEmail;
+    delete r.helpfulVoters;
+  }
   return json({ success: true, message: 'Reviews fetched', data: list });
 });
 
@@ -185,13 +190,17 @@ coupons.get('/', adminOnly, async () => {
   return json({ success: true, message: 'Coupons fetched', data: list });
 });
 
-coupons.post('/validate', validate(applyCouponSchema), async ({ body }) => {
+const couponLimiter = rateLimit('coupon', 10 * 60 * 1000, 30, 'Too many coupon attempts. Please try again later.');
+
+coupons.post('/validate', couponLimiter, validate(applyCouponSchema), async ({ body }) => {
   const coupon = await db.coupons.findOne({ code: String(body.code).toUpperCase() });
   if (!coupon || !couponIsValid(coupon)) {
     return json({ success: true, message: 'Coupon validation', data: { isValid: false, discount: 0 } });
   }
   const discount = coupon.type === 'free_shipping' ? 0 : couponDiscount(coupon, body.cartTotal);
-  return json({ success: true, message: 'Coupon validation', data: { isValid: true, discount, coupon } });
+  // Only what the shopper needs; never the list of who used it
+  const { code, type, value, minOrderAmount, maxDiscountAmount, description, endDate } = coupon;
+  return json({ success: true, message: 'Coupon validation', data: { isValid: true, discount, coupon: { code, type, value, minOrderAmount, maxDiscountAmount, description, endDate } } });
 });
 
 coupons.post('/', adminOnly, validate(createCouponSchema), async ({ body }) => {
@@ -239,7 +248,7 @@ users.get('/', adminOnly, async ({ query }) => {
     list.map(async (u) => {
       const userOrders = await db.orders.find({ user: u._id, status: { $nin: ['cancelled', 'refunded'] } });
       const totalSpent = userOrders.reduce((s, o) => s + Number(o.total || 0), 0);
-      const { password: _pw, ...rest } = u;
+      const rest = publicUser(u);
       return { ...rest, totalSpent, ordersCount: userOrders.length, isVip: totalSpent >= vipThreshold };
     })
   );

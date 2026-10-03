@@ -54,9 +54,9 @@ const TableOfContents = () => {
         Table of Contents
       </h3>
       <nav className="flex flex-col gap-3">
-        {headings.map((heading) => (
+        {headings.map((heading, i) => (
           <button
-            key={heading.id}
+            key={`${heading.id}-${i}`}
             onClick={() => {
               const element = document.getElementById(heading.id);
               if (element) {

@@ -370,8 +370,11 @@ function csvResponse(name: string, body: string) {
 }
 
 reports.get('/orders.csv', adminOnly, async ({ query }) => {
-  const from = query.from ? new Date(String(query.from)).toISOString() : '1970-01-01';
-  const to = query.to ? new Date(Date.parse(String(query.to)) + 86400000).toISOString() : '9999-12-31';
+  const parse = (v: unknown) => (v && !Number.isNaN(Date.parse(String(v))) ? Date.parse(String(v)) : null);
+  const f = parse(query.from);
+  const t = parse(query.to);
+  const from = f !== null ? new Date(f).toISOString() : '1970-01-01';
+  const to = t !== null ? new Date(t + 86400000).toISOString() : '9999-12-31';
   const sql = getSql();
   const rows = await sql`select _id, data, created_at from orders where created_at >= ${from} and created_at < ${to} order by created_at desc limit 20000`;
   return csvResponse(

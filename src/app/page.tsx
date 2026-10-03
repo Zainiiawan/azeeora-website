@@ -1,6 +1,7 @@
 import { serverFetch } from '@/lib/serverFetch';
 import { Category } from '@/lib/api/categoryApi';
 import { Product } from '@/lib/api/productApi';
+import { Review } from '@/lib/api/reviewApi';
 import HomeClient from './HomeClient';
 import { Metadata } from 'next';
 
@@ -29,5 +30,25 @@ export default async function Home() {
     getJson<Category[]>('/categories', []),
     getJson<{ products: Product[] }>('/products?page=1&limit=8&sortBy=bestselling', { products: [] }),
   ]);
-  return <HomeClient initialCategories={categories} bestsellers={productData.products ?? []} />;
+  const bestsellers = productData.products ?? [];
+  // A few real customer reviews for the homepage
+  const reviewLists = await Promise.all(
+    bestsellers.slice(0, 4).map(async (p) =>
+      (await getJson<Review[]>(`/reviews/${p._id}`, [])).map((r) => ({
+        _id: r._id,
+        rating: r.rating,
+        title: r.title,
+        body: r.body,
+        name: r.user ? `${r.user.firstName} ${String(r.user.lastName ?? '').slice(0, 1)}.` : (r.guestName ?? 'Customer'),
+        product: p.name,
+        slug: p.slug,
+      }))
+    )
+  );
+  const testimonials = reviewLists
+    .flat()
+    .filter((r) => r.rating >= 4 && r.body && r.body.length > 30)
+    .sort((a, b) => b.body.length - a.body.length)
+    .slice(0, 6);
+  return <HomeClient initialCategories={categories} bestsellers={bestsellers} testimonials={testimonials} />;
 }

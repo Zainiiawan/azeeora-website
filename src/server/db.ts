@@ -264,7 +264,16 @@ export class Collection {
     const now = new Date().toISOString();
     const { _id, ...rest } = toPlain(doc) as Doc;
     const data = { ...rest, updatedAt: now };
-    await sql`update ${sql(this.table)} set data = ${sql.json(data)}, updated_at = ${now} where _id = ${_id}`;
+    if (this.table === 'users') {
+      // Counters are only ever changed atomically (members.ts). A full-document save
+      // from a stale read must not put old values back, so keep what the row has.
+      await sql`update users set data = ${sql.json(data)} || jsonb_strip_nulls(jsonb_build_object(
+          'loyaltyPoints', data->'loyaltyPoints', 'monthlyBV', data->'monthlyBV', 'totalBV', data->'totalBV',
+          'referredBV', data->'referredBV', 'lastMonthBV', data->'lastMonthBV', 'bvHistory', data->'bvHistory')),
+        updated_at = ${now} where _id = ${_id}`;
+    } else {
+      await sql`update ${sql(this.table)} set data = ${sql.json(data)}, updated_at = ${now} where _id = ${_id}`;
+    }
     Object.assign(doc, { updatedAt: now });
     return doc;
   }

@@ -20,7 +20,7 @@ import {
 } from '../http';
 import { findSponsor } from '../members';
 import { generateRandomToken, hashToken, generateTokenPair, verifyRefreshToken } from '../jwt';
-import { sendPasswordResetOtpEmail, sendWelcomeEmail, sendOtpEmail } from '../email';
+import { sendPasswordResetOtpEmail, sendWelcomeEmail, sendOtpEmail, canSendEmail } from '../email';
 import {
   loginSchema,
   registerSchema,
@@ -58,6 +58,33 @@ router.post('/register', authLimiter, validate(registerSchema), async ({ body })
   const existing = await db.users.findOne({ email: normalizedEmail });
   if (existing && existing.isEmailVerified) {
     throw new ConflictError('An account with this email already exists. Please sign in.');
+  }
+
+  // No email service configured yet: there is no way to deliver a code, so the
+  // account is verified straight away and signed in (codes resume once email is set up).
+  if (!canSendEmail()) {
+    if (existing) throw new ConflictError('An account with this email already exists. Please sign in.');
+    const created = await db.users.create({
+      firstName,
+      lastName,
+      email: normalizedEmail,
+      phone,
+      password: await hashPassword(password),
+      isEmailVerified: true,
+      isActive: true,
+      role: 'customer',
+      ...referral,
+      addresses: [],
+      wishlist: [],
+      compare: [],
+      recentlyViewed: [],
+      refreshTokens: [],
+      lastLogin: new Date().toISOString(),
+    });
+    const tokens = generateTokenPair({ sub: created._id, email: created.email, role: created.role });
+    created.refreshTokens = [hashToken(tokens.refreshToken)];
+    await db.users.save(created);
+    return json({ success: true, message: 'Account created. Welcome to Azeeora!', data: { user: publicUser(created), tokens } }, 201);
   }
 
   const otp = generateOtp();
@@ -248,18 +275,30 @@ router.post('/forgot-password', resetLimiter, validate(forgotPasswordSchema), as
   const otp = generateOtp();
   user.passwordResetToken = hashToken(otp);
   user.passwordResetExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  user.passwordResetAttempts = 0;
   await db.users.save(user);
   await sendPasswordResetOtpEmail(user.email, user.firstName, otp);
 
   return json({ success: true, message: 'A verification code has been sent to your email.' });
 });
 
-router.post('/verify-password-reset-otp', validate(verifyOtpSchema), async ({ body }) => {
-  const user = await db.users.findOne({
-    email: String(body.email).toLowerCase().trim(),
-    passwordResetToken: hashToken(body.otp),
-  });
-  if (!user || !isFuture(user.passwordResetExpiry)) throw new UnauthorizedError('Invalid or expired verification code');
+router.post('/verify-password-reset-otp', resetLimiter, validate(verifyOtpSchema), async ({ body }) => {
+  const user = await db.users.findOne({ email: String(body.email).toLowerCase().trim() });
+  if (!user || !user.passwordResetToken || !isFuture(user.passwordResetExpiry)) throw new UnauthorizedError('Invalid or expired verification code');
+  // 5 wrong tries burns the code, so 6 digits can't be brute forced
+  if ((user.passwordResetAttempts ?? 0) >= OTP_MAX_ATTEMPTS) {
+    throw new ForbiddenError('Too many wrong codes. Please request a new one.');
+  }
+  if (hashToken(body.otp) !== user.passwordResetToken) {
+    user.passwordResetAttempts = (user.passwordResetAttempts ?? 0) + 1;
+    if (user.passwordResetAttempts >= OTP_MAX_ATTEMPTS) {
+      delete user.passwordResetToken;
+      delete user.passwordResetExpiry;
+    }
+    await db.users.save(user);
+    throw new UnauthorizedError('Invalid or expired verification code');
+  }
+  user.passwordResetAttempts = 0;
 
   const secureToken = generateRandomToken(32);
   user.passwordResetToken = hashToken(secureToken);
@@ -276,6 +315,7 @@ router.post('/reset-password', validate(resetPasswordSchema), async ({ body }) =
   user.password = await hashPassword(body.password);
   delete user.passwordResetToken;
   delete user.passwordResetExpiry;
+  user.refreshTokens = []; // sign out everywhere after a reset
   await db.users.save(user);
 
   return json({ success: true, message: 'Password reset successful. Please log in.' });

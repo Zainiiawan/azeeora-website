@@ -263,7 +263,7 @@ function CheckoutContent() {
         dispatch(clearCart());
       }
 
-      router.push(`/checkout/success?orderId=${order._id}`);
+      router.push(`/checkout/success?orderId=${order._id}&orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.customerEmail ?? data.email ?? '')}`);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
@@ -303,8 +303,8 @@ function CheckoutContent() {
           <ArrowLeft className="w-4 h-4" /> Back to {isBuyNow ? 'product' : 'cart'}
         </Link>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 min-w-0">
             <motion.form
               onSubmit={handleSubmit(onSubmit)}
               initial={{ opacity: 0, y: 12 }}

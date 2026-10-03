@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { db, populate, newId, Doc } from '../db';
+import { db, populate, newId, getSql, Doc } from '../db';
 import {
   Router,
   json,
@@ -20,6 +20,8 @@ import {
   getSettings,
   notifyAdmins,
   restockOrderItems,
+  takeStock,
+  returnStock,
 } from '../commerce';
 import {
   accountType,
@@ -73,7 +75,7 @@ const checkoutSchema = z.object({
   guestInfo: z
     .object({ firstName: z.string().min(1), lastName: z.string().min(1), email: z.string().email(), phone: z.string().min(1) })
     .optional(),
-  items: z.array(z.object({ productId: z.string(), variant: z.string().optional(), quantity: z.number().min(1) })).optional(),
+  items: z.array(z.object({ productId: z.string(), variant: z.string().optional(), quantity: z.number().int().min(1).max(500) })).optional(),
 });
 
 const userSummary = ['firstName', 'lastName', 'email', 'phone'];
@@ -107,21 +109,25 @@ function priceLine(product: Doc, variantKey: string | undefined, quantity: numbe
   };
 }
 
-/** Deduct stock for one line, mutating the product (same rules as before). */
-function deductStock(product: Doc, item: { variant?: string; sku?: string; quantity: number }) {
-  const variant = findVariant(product, item.variant, item.sku);
-  if (variant) {
-    if (variant.stock < item.quantity) throw new BadRequestError(`Insufficient stock for ${product.name}`);
-    variant.stock -= item.quantity;
-  }
-  if ((product.stock ?? 0) < item.quantity) {
-    const sumVariantStock = (product.variants ?? []).reduce((s: number, v: any) => s + (v.stock ?? 0), 0);
-    if (sumVariantStock < item.quantity) throw new BadRequestError(`Insufficient stock for ${product.name}`);
-    product.stock = Math.max(0, sumVariantStock);
-  } else {
-    product.stock -= item.quantity;
-  }
-  product.soldCount = (product.soldCount ?? 0) + item.quantity;
+/** Use up one coupon redemption atomically; false if the usage limit is reached. */
+async function claimCoupon(code: string, userId: string | undefined, email: string) {
+  const sql = getSql();
+  const rows = await sql`
+    update coupons set
+      data = data
+        || jsonb_build_object('usageCount', coalesce((data->>'usageCount')::int, 0) + 1)
+        || jsonb_build_object('usedBy', coalesce(data->'usedBy', '[]'::jsonb) || ${userId ? JSON.stringify([userId]) : '[]'}::text::jsonb)
+        || jsonb_build_object('usedByEmails', coalesce(data->'usedByEmails', '[]'::jsonb) || ${email ? JSON.stringify([email]) : '[]'}::text::jsonb),
+      updated_at = now()
+    where data->>'code' = ${code}
+      and (data->>'usageLimit' is null or coalesce((data->>'usageCount')::int, 0) < (data->>'usageLimit')::int)
+    returning _id`;
+  return rows.length > 0;
+}
+
+async function releaseCoupon(code: string) {
+  const sql = getSql();
+  await sql`update coupons set data = jsonb_set(data, '{usageCount}', to_jsonb(greatest(0, coalesce((data->>'usageCount')::int, 0) - 1))) where data->>'code' = ${code}`;
 }
 
 async function nextOrderNumber() {
@@ -148,6 +154,8 @@ async function buildQuote(input: {
   walletAmount?: number;
   pointsToRedeem?: number;
   pickupPointId?: string;
+  guestEmail?: string;
+  guestPhone?: string;
 }) {
   const settings = await getSettings();
   const ms = await getMemberSettings();
@@ -178,6 +186,7 @@ async function buildQuote(input: {
     }
     const lineBV = unitBV(product, retailUnit, ms) * line.quantity;
     Object.assign(priced, {
+      category: product.category ? String(product.category) : undefined,
       retailPrice: retailUnit,
       memberPrice: unit !== retailUnit ? unit : undefined,
       price: unit,
@@ -216,24 +225,33 @@ async function buildQuote(input: {
   let coupon: Doc | null = null;
   let couponError: string | undefined;
   const couponCode = input.couponCode ? String(input.couponCode).toUpperCase() : undefined;
+  const couponEmail = (buyer?.email ?? input.guestEmail ?? '').toLowerCase().trim() || undefined;
   if (couponCode) {
     coupon = await db.coupons.findOne({ code: couponCode });
     if (!coupon) couponError = 'Coupon not found';
     else if (buyerType !== 'customer' && !ms.couponsForMembers) couponError = 'Coupons cannot be combined with partner or wholesale prices';
     else if (!couponIsValid(coupon)) couponError = 'Coupon is not valid';
-    else if (coupon.perUserLimit && buyer && (coupon.usedBy ?? []).some((u: any) => String(u) === String(buyer._id))) {
-      couponError = 'Coupon usage limit reached for this user';
+    else if (
+      coupon.perUserLimit &&
+      ((buyer && (coupon.usedBy ?? []).some((u: any) => String(u) === String(buyer._id))) ||
+        (couponEmail && (coupon.usedByEmails ?? []).includes(couponEmail)))
+    ) {
+      couponError = 'You have already used this coupon';
     } else if (coupon.type === 'free_shipping') {
       if (shippingCost !== null) shippingCost = 0;
     } else {
       let cItems = items.map((i) => ({ productId: String(i.product), quantity: i.quantity, unitPrice: i.price }));
       let eligibleTotal = subtotal;
-      if (coupon.applicableProducts?.length) {
-        const allowed = new Set(coupon.applicableProducts.map(String));
-        cItems = cItems.filter((i) => allowed.has(i.productId));
-        eligibleTotal = items.filter((ci) => allowed.has(String(ci.product))).reduce((s, ci) => s + ci.total, 0);
+      const products = coupon.applicableProducts?.length ? new Set(coupon.applicableProducts.map(String)) : null;
+      const categories = coupon.applicableCategories?.length ? new Set(coupon.applicableCategories.map(String)) : null;
+      if (products || categories) {
+        const eligible = (ci: any) => (products ? products.has(String(ci.product)) : true) && (categories ? categories.has(String(ci.category)) : true);
+        const allowedIds = new Set(items.filter(eligible).map((ci) => String(ci.product)));
+        cItems = cItems.filter((i) => allowedIds.has(i.productId));
+        eligibleTotal = items.filter(eligible).reduce((s, ci) => s + ci.total, 0);
       }
       discount = couponDiscount(coupon, eligibleTotal, { cartItems: cItems }) ?? 0;
+      if (discount <= 0 && eligibleTotal === 0) couponError = 'This coupon does not apply to the items in your bag';
     }
     if (couponError) coupon = null;
   }
@@ -262,6 +280,14 @@ async function buildQuote(input: {
     if (buyer?.referredBy) sponsor = await db.users.findById(buyer.referredBy);
     else if (input.refCode) sponsor = await findSponsor(input.refCode);
     if (sponsor && (!isPartner(sponsor) || sponsor.isActive === false || sponsor._id === buyer?._id)) sponsor = null;
+    // A partner checking out as a guest with their own code earns nothing
+    const digits = (v?: string) => String(v ?? '').replace(/\D/g, '').slice(-10);
+    if (sponsor && !buyer) {
+      const sameEmail = input.guestEmail && input.guestEmail.toLowerCase().trim() === String(sponsor.email).toLowerCase();
+      const phones = [sponsor.phone, sponsor.partner?.phone, sponsor.partner?.whatsapp].map(digits).filter((x) => x.length >= 10);
+      const samePhone = input.guestPhone && phones.includes(digits(input.guestPhone));
+      if (sameEmail || samePhone) sponsor = null;
+    }
   }
   const commissionBase = Math.max(0, subtotal - discount - pointsValue);
   const commission = sponsor ? round((commissionBase * ms.referralCommissionPct) / 100) : 0;
@@ -299,7 +325,7 @@ async function buildQuote(input: {
 }
 
 const quoteSchema = z.object({
-  items: z.array(z.object({ productId: z.string(), variant: z.string().optional(), quantity: z.number().min(1) })).optional(),
+  items: z.array(z.object({ productId: z.string(), variant: z.string().optional(), quantity: z.number().int().min(1).max(500) })).optional(),
   couponCode: z.string().optional(),
   city: z.string().optional(),
   refCode: z.string().max(20).optional(),
@@ -373,6 +399,8 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
     walletAmount: body.walletAmount,
     pointsToRedeem: body.pointsToRedeem,
     pickupPointId: body.pickupPointId,
+    guestEmail: guestInfo?.email,
+    guestPhone: guestInfo?.phone ?? shippingAddress.phone,
   });
   if (q.couponError && body.couponCode) throw new BadRequestError(q.couponError);
   const finalItems = q.items;
@@ -398,6 +426,20 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
   const orderNumber = await nextOrderNumber();
   let pointsTaken = false;
   let walletTaken = false;
+  const stockTaken: any[] = [];
+  let couponTaken = false;
+  const undo = async () => {
+    for (const item of stockTaken) await returnStock(String(item.product), item.quantity, item.variant);
+    stockTaken.length = 0;
+    if (couponTaken && coupon) await releaseCoupon(coupon.code);
+    couponTaken = false;
+    if (pointsTaken && userId) await bumpUserCounter(userId, 'loyaltyPoints', q.pointsRedeemed);
+    pointsTaken = false;
+    if (walletTaken && userId) {
+      await postCredits([{ user: userId, type: 'order_refund', amount: q.walletUsed, status: 'available', order: orderId, orderNumber, note: 'Checkout did not complete' }]);
+    }
+    walletTaken = false;
+  };
   if (userId && q.pointsRedeemed > 0) {
     pointsTaken = await bumpUserCounter(userId, 'loyaltyPoints', -q.pointsRedeemed);
     if (!pointsTaken) throw new BadRequestError('Not enough loyalty points');
@@ -410,20 +452,21 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
       walletTaken = true;
     }
 
-    // Reserve stock before creating the order so a failure leaves nothing behind
-    const touchedProducts = new Map<string, Doc>();
+    // Claim the coupon (atomic, respects its usage limit)
+    if (coupon) {
+      const claimed = await claimCoupon(coupon.code, userId, (user?.email ?? guestInfo?.email ?? '').toLowerCase().trim());
+      if (!claimed) throw new BadRequestError('This coupon has reached its usage limit');
+      couponTaken = true;
+    }
+
+    // Reserve stock line by line (atomic); give back what was taken if a line fails
     for (const item of finalItems) {
-      const product = touchedProducts.get(item.product) ?? (await db.products.findById(item.product));
-      if (!product || !product.isActive) throw new NotFoundError('Product');
-      deductStock(product, item);
-      touchedProducts.set(product._id, product);
+      const ok = await takeStock(String(item.product), item.quantity, item.variant);
+      if (!ok) throw new BadRequestError(`Insufficient stock for ${item.name}`);
+      stockTaken.push(item);
     }
-    for (const product of touchedProducts.values()) await db.products.save(product);
   } catch (err) {
-    if (pointsTaken && userId) await bumpUserCounter(userId, 'loyaltyPoints', q.pointsRedeemed);
-    if (walletTaken && userId) {
-      await postCredits([{ user: userId, type: 'order_refund', amount: q.walletUsed, status: 'available', order: orderId, orderNumber, note: 'Checkout did not complete' }]);
-    }
+    await undo();
     throw err;
   }
 
@@ -432,7 +475,9 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
     await db.users.updateById(q.buyer._id, { referredBy: q.sponsor._id, referredAt: new Date().toISOString() });
   }
 
-  const order = await db.orders.create({
+  let order: Doc;
+  try {
+  order = await db.orders.create({
     _id: orderId,
     orderNumber,
     user: userId,
@@ -478,13 +523,11 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
     trackingHistory: [{ status: initialStatus, message: initialMessage, timestamp: new Date().toISOString() }],
     auditLog: [],
   });
-  await onOrderPlaced(order);
-
-  if (coupon) {
-    coupon.usageCount = (coupon.usageCount ?? 0) + 1;
-    if (userId) coupon.usedBy = [...(coupon.usedBy ?? []), String(userId)];
-    await db.coupons.save(coupon);
+  } catch (err) {
+    await undo();
+    throw err;
   }
+  await onOrderPlaced(order);
 
   if (cartDoc) {
     Object.assign(cartDoc, { items: [], subtotal: 0, itemCount: 0, couponDiscount: 0 });
@@ -600,7 +643,7 @@ const adminEditSchema = z.object({
   customerEmail: z.string().email().optional(),
   customerPhone: z.string().optional(),
   shippingAddress: addressSchema.optional(),
-  items: z.array(z.object({ product: z.string(), variant: z.string().optional(), quantity: z.number().min(1) })).optional(),
+  items: z.array(z.object({ product: z.string(), variant: z.string().optional(), quantity: z.number().int().min(1).max(500) })).optional(),
   shippingCost: z.number().min(0).optional(),
   manualDiscount: z.number().min(0).optional(),
   manualDiscountReason: z.string().optional(),
@@ -625,36 +668,16 @@ orders.patch('/:orderId/admin-edit', adminOnly, validate(adminEditSchema), async
   }
 
   if (body.items) {
-    // Validate and price the new lines first, so a bad edit changes nothing
-    const products = new Map<string, Doc>();
-    const loadProduct = async (id: string) => {
-      if (!products.has(id)) {
-        const p = await db.products.findById(id);
-        if (p) products.set(id, p);
-      }
-      return products.get(id);
-    };
-
-    // Give back stock for the old lines (in memory)
-    for (const old of order.items ?? []) {
-      const product = await loadProduct(String(old.product));
-      if (!product) continue;
-      if (old.variant) {
-        const v = (product.variants ?? []).find((x: any) => x.sku === old.variant || x.value === old.variant || x.sku === old.sku);
-        if (v) v.stock = (v.stock ?? 0) + old.quantity;
-      }
-      product.stock = (product.stock ?? 0) + old.quantity;
-      product.soldCount = Math.max(0, (product.soldCount ?? 0) - old.quantity);
-    }
-
+    if (['cancelled', 'refunded', 'returned'].includes(order.status)) throw new BadRequestError('Closed orders cannot be edited');
+    // Price the new lines first, so a bad edit changes nothing
     let newSubtotal = 0;
     let newProductDiscount = 0;
     let newBV = 0;
-    const newItems = [];
+    const newItems: any[] = [];
     const ms = await getMemberSettings();
     const member = order.member ?? {};
     for (const input of body.items) {
-      const product = await loadProduct(input.product);
+      const product = await db.products.findById(input.product);
       if (!product || !product.isActive) throw new BadRequestError(`Product ${input.product} is invalid`);
       const priced: any = priceLine(product, input.variant, input.quantity);
       // Keep the buyer's member price (partner discount / wholesale) on edited lines
@@ -671,10 +694,19 @@ orders.patch('/:orderId/admin-edit', adminOnly, validate(adminEditSchema), async
       newSubtotal += priced.lineTotal;
       newProductDiscount += priced.productDiscount * input.quantity;
       newItems.push(priced);
-      deductStock(product, { variant: input.variant, quantity: input.quantity, sku: priced.sku });
     }
 
-    for (const p of products.values()) await db.products.save(p);
+    // Give back the old lines, then take the new ones (atomic); undo on failure
+    for (const old of order.items ?? []) await returnStock(String(old.product), old.quantity, old.variant);
+    const taken: any[] = [];
+    for (const item of newItems) {
+      if (!(await takeStock(String(item.product), item.quantity, item.variant))) {
+        for (const t of taken) await returnStock(String(t.product), t.quantity, t.variant);
+        for (const old of order.items ?? []) await takeStock(String(old.product), old.quantity, old.variant);
+        throw new BadRequestError(`Insufficient stock for ${item.name}`);
+      }
+      taken.push(item);
+    }
     order.items = newItems;
     order.subtotal = newSubtotal;
     order.productDiscount = newProductDiscount;
@@ -703,6 +735,13 @@ orders.patch('/:orderId/admin-edit', adminOnly, validate(adminEditSchema), async
   const manual = order.manualDiscount || 0;
   if (manual > subtotal) throw new BadRequestError('Manual discount cannot exceed subtotal');
   order.total = Math.max(0, subtotal - (order.couponDiscount || 0) - (order.pointsDiscount || 0) - manual + (order.shippingCost || 0) + (order.tax || 0));
+  // Wallet paid more than the new total: give the difference back
+  if ((order.walletUsed || 0) > order.total && order.user) {
+    const back = order.walletUsed - order.total;
+    await postCredits([{ user: String(order.user), type: 'order_refund', amount: back, status: 'available', order: order._id, orderNumber: order.orderNumber, note: `Order ${order.orderNumber} was changed` }]);
+    order.walletUsed = order.total;
+    if (order.member) order.member = { ...order.member, walletUsed: order.total };
+  }
   order.amountDue = Math.max(0, order.total - (order.walletUsed || 0));
 
   if (hasChanges) {
@@ -745,6 +784,12 @@ export async function applyOrderStatus(orderId: string, body: z.infer<typeof upd
   if (!order) throw new NotFoundError('Order');
 
   const previousStatus = order.status;
+  const CLOSED_STATUSES = ['cancelled', 'refunded', 'returned'];
+  // Refunds, restock and commission reversal have already run for a closed order;
+  // reopening it would run them twice on the next cancel.
+  if (CLOSED_STATUSES.includes(previousStatus) && !CLOSED_STATUSES.includes(status)) {
+    throw new BadRequestError('This order is closed and cannot be reopened. Please place a new order instead.');
+  }
   const now = new Date().toISOString();
   const codApproval = order.paymentMethod === 'cod' && order.status === 'pending_confirmation' && status === 'processing';
 
@@ -912,6 +957,7 @@ payments.patch('/:orderId/verify', adminOnly, validate(verifyPaymentSchema), asy
   if (!order) throw new NotFoundError('Order');
   if (!order.paymentProof) throw new BadRequestError('No payment proof submitted');
   if (order.paymentStatus === 'paid') throw new BadRequestError('Payment already approved');
+  if (['cancelled', 'refunded', 'returned'].includes(order.status)) throw new BadRequestError('This order is closed');
 
   const now = new Date().toISOString();
   const approved = body.action === 'approve';
