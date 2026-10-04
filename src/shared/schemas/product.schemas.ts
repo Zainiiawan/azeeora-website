@@ -1,11 +1,14 @@
 import { z } from 'zod';
 
+// Full URL (uploads) or a path on this site (/brand/...)
+const imageUrl = z.string().refine((v) => /^https?:\/\//.test(v) || /^\/[^/]/.test(v), 'Invalid image URL');
+
 // ==========================================
 // Product Schemas
 // ==========================================
 
 const productImageSchema = z.object({
-  url: z.string().url(),
+  url: imageUrl,
   publicId: z.string(),
   alt: z.string().optional(),
   isMain: z.boolean().optional(),
@@ -31,15 +34,33 @@ export const createProductSchema = z.object({
   subcategory: z.string().optional(),
   brand: z.string().optional(),
   images: z.array(productImageSchema).min(1, 'At least one image is required'),
+  video: z
+    .object({
+      url: imageUrl,
+      publicId: z.string().min(1),
+    })
+    .optional(),
   variants: z.array(productVariantSchema).optional().default([]),
   basePrice: z.number().min(0, 'Price must be positive'),
   compareAtPrice: z.number().min(0).optional(),
+  // Member programme: points per unit, wholesale price and minimum quantity
+  bv: z.number().min(0).optional(),
+  wholesalePrice: z.number().min(0).nullable().optional(),
+  wholesaleMinQty: z.number().int().min(1).nullable().optional(),
   stock: z.number().int().min(0, 'Stock must be non-negative'),
   lowStockThreshold: z.number().int().min(0).default(10),
   tags: z.array(z.string()).optional().default([]),
   attributes: z.record(z.string()).optional().default({}),
   isFeatured: z.boolean().optional().default(false),
   isActive: z.boolean().optional().default(true),
+  isComingSoon: z.boolean().optional().default(false),
+  launchDate: z.string().optional(),
+  discount: z.object({
+    type: z.enum(['percentage', 'fixed']),
+    value: z.number().min(0),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+  }).nullable().optional(),
   seo: z.object({
     metaTitle: z.string().max(60).optional(),
     metaDescription: z.string().max(160).optional(),

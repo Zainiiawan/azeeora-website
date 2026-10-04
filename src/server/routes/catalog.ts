@@ -8,7 +8,7 @@ import {
   updateProductSchema,
   createCategorySchema,
   createBrandSchema,
-} from '../shared';
+} from '@/shared';
 
 const makeSlug = (name: string) => slugify(name, { lower: true, strict: true });
 

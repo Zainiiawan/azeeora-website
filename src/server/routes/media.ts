@@ -2,7 +2,7 @@ import { Router, json, authenticate, requireEmailVerification, adminOnly, rateLi
 import { put } from '@vercel/blob';
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { getCloudinary, hasRealCloudinary } from '../cloudinary';
-import { IMAGE_FORMATS, VIDEO_FORMATS, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE } from '../shared';
+import { IMAGE_FORMATS, VIDEO_FORMATS, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE } from '@/shared';
 import { testSmtpConnection } from '../email';
 
 export const media = new Router();

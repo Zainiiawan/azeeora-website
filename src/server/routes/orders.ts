@@ -40,7 +40,7 @@ import {
   walletSummary,
   wholesaleTerms,
 } from '../members';
-import { updateOrderStatusSchema, ORDER_STATUS_LABELS, submitPaymentProofSchema, verifyPaymentSchema, MANUAL_PAYMENT_ACCOUNTS } from '../shared';
+import { updateOrderStatusSchema, ORDER_STATUS_LABELS, submitPaymentProofSchema, verifyPaymentSchema, MANUAL_PAYMENT_ACCOUNTS } from '@/shared';
 import {
   sendOrderConfirmationEmail,
   sendOrderStatusEmail,

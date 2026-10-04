@@ -31,7 +31,7 @@ import {
   changePasswordSchema,
   verifyOtpSchema,
   resendOtpSchema,
-} from '../shared';
+} from '@/shared';
 import { newId } from '../db';
 
 const router = new Router();

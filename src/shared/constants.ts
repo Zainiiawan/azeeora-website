@@ -94,7 +94,10 @@ export const SUPPORTED_COUNTRIES = [
 ] as const;
 
 export const IMAGE_FORMATS = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
-export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+
+export const VIDEO_FORMATS = ['video/mp4', 'video/webm'] as const;
+export const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
 export const COUPON_TYPES = {
   PERCENTAGE: 'percentage',

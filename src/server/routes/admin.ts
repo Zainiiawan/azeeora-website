@@ -23,7 +23,7 @@ import {
   createCouponSchema,
   applyCouponSchema,
   STORE_CONTACT,
-} from '../shared';
+} from '@/shared';
 import { sendAdminReplyEmail } from '../email';
 import { logger } from '../logger';
 

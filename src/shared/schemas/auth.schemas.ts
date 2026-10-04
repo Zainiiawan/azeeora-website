@@ -5,39 +5,46 @@ import { z } from 'zod';
 // ==========================================
 
 export const registerSchema = z.object({
-  firstName: z.string().min(1, 'Please enter your first name.').max(50),
-  lastName: z.string().min(1, 'Please enter your last name.').max(50),
-  email: z.string().min(1, 'Please enter your email address.').email('Please enter a valid email address.'),
+  firstName: z.string().min(2, 'First name must be at least 2 characters').max(50),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters').max(50),
+  email: z.string().email('Please enter a valid email address'),
   password: z
     .string()
-    .min(1, 'Please enter your password.')
-    .min(8, 'Password must contain at least 8 characters.'),
-  confirmPassword: z.string().min(1, 'Please confirm your password.'),
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+  confirmPassword: z.string(),
   phone: z.string().optional(),
+  refCode: z.string().max(20).optional(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match.',
+  message: 'Passwords do not match',
   path: ['confirmPassword'],
 });
 
 export const loginSchema = z.object({
-  email: z.string().min(1, 'Please enter your email address.').email('Please enter a valid email address.'),
-  password: z.string().min(1, 'Please enter your password.'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
   rememberMe: z.boolean().optional(),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Please enter a valid email address.'),
+  email: z.string().email('Please enter a valid email address'),
 });
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
   password: z
     .string()
-    .min(1, 'Please enter your password.')
-    .min(8, 'Password must contain at least 8 characters.'),
-  confirmPassword: z.string().min(1, 'Please confirm your password.'),
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+  confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match.',
+  message: 'Passwords do not match',
   path: ['confirmPassword'],
 });
 
