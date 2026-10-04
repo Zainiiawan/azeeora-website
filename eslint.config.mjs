@@ -17,6 +17,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // One-off CommonJS scripts at the repo root (logo editing etc.), not app code.
+    "crop_logo.js",
+    "generate-logo.js",
+    "resize_logo.js",
   ]),
 ]);
 
