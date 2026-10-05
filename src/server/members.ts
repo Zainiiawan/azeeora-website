@@ -19,7 +19,12 @@ import { logger } from './logger';
  */
 
 export type MemberSettings = {
+  /** @deprecated kept for old reports/UI; always equal to levelCommissionPct[0] */
   referralCommissionPct: number;
+  /** Commission % per sponsor level: index 0 = direct sponsor (level 1), index 1 = level 2, etc. */
+  levelCommissionPct: number[];
+  /** Minimum monthlyBV a partner must have for THEIR OWN level-2+ override commissions to pay out (level 1 always pays). */
+  minActiveBVForOverride: number;
   partnerDiscountTiers: { minBV: number; pct: number }[];
   wholesaleDefaultDiscountPct: number;
   wholesaleDefaultMinQty: number;
@@ -29,10 +34,16 @@ export type MemberSettings = {
   minRedeemPoints: number;
   rsPerBV: number;
   couponsForMembers: boolean;
+  /** Group-BV (own + entire downline) rank ladder. Ranks never downgrade once reached. */
+  ranks: { rank: string; minGroupBV: number; bonus: number }[];
 };
+
+export const RANK_ORDER = ['Member', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'] as const;
 
 export const MEMBER_DEFAULTS: MemberSettings = {
   referralCommissionPct: 10,
+  levelCommissionPct: [10, 5, 3, 2, 1],
+  minActiveBVForOverride: 30,
   partnerDiscountTiers: [
     { minBV: 0, pct: 20 },
     { minBV: 100, pct: 25 },
@@ -46,12 +57,23 @@ export const MEMBER_DEFAULTS: MemberSettings = {
   minRedeemPoints: 100,
   rsPerBV: 100,
   couponsForMembers: false,
+  ranks: [
+    { rank: 'Bronze', minGroupBV: 200, bonus: 500 },
+    { rank: 'Silver', minGroupBV: 1000, bonus: 1500 },
+    { rank: 'Gold', minGroupBV: 3000, bonus: 5000 },
+    { rank: 'Platinum', minGroupBV: 10000, bonus: 15000 },
+    { rank: 'Diamond', minGroupBV: 30000, bonus: 50000 },
+  ],
 };
 
 export async function getMemberSettings(): Promise<MemberSettings> {
   const s = await getSettings();
   const m = { ...MEMBER_DEFAULTS, ...(s.members ?? {}) };
   m.partnerDiscountTiers = [...(m.partnerDiscountTiers ?? MEMBER_DEFAULTS.partnerDiscountTiers)].sort((a, b) => a.minBV - b.minBV);
+  m.levelCommissionPct = m.levelCommissionPct?.length ? m.levelCommissionPct : MEMBER_DEFAULTS.levelCommissionPct;
+  m.ranks = [...(m.ranks?.length ? m.ranks : MEMBER_DEFAULTS.ranks)].sort((a, b) => a.minGroupBV - b.minGroupBV);
+  // Keep the deprecated single field in sync with level 1 so old code/reports reading it still see the right number.
+  m.referralCommissionPct = m.levelCommissionPct[0] ?? 0;
   return m;
 }
 
@@ -113,6 +135,96 @@ export async function findSponsor(code?: string | null): Promise<Doc | null> {
   const u = await db.users.findOne({ memberCode: clean });
   if (!u || !isPartner(u) || u.isActive === false) return null;
   return u;
+}
+
+// ---------------------------------------------------------------------------
+// Level-wise team (multi-level commissions and group BV / rank)
+// ---------------------------------------------------------------------------
+
+/**
+ * Walk up from `startSponsor` through `referredBy` links, returning every
+ * approved+active partner ancestor in order (index 0 = direct sponsor /
+ * level 1, index 1 = level 2, ...), stopping at `maxLevels` or the first
+ * broken/inactive link. A cycle (shouldn't happen, but data can be edited by
+ * hand) is also a safe stop condition via the `seen` set.
+ */
+export async function sponsorChain(startSponsor: Doc | null, maxLevels: number): Promise<Doc[]> {
+  const chain: Doc[] = [];
+  const seen = new Set<string>();
+  let current: Doc | null = startSponsor;
+  while (current && chain.length < maxLevels && !seen.has(current._id)) {
+    if (!isPartner(current) || current.isActive === false) break;
+    seen.add(current._id);
+    chain.push(current);
+    current = current.referredBy ? await db.users.findById(current.referredBy) : null;
+  }
+  return chain;
+}
+
+/** The highest rank whose minGroupBV is at or below `groupBV`, or null if below the first rank. */
+export function rankForGroupBV(settings: MemberSettings, groupBV: number): string | null {
+  let best: string | null = null;
+  for (const r of settings.ranks) if (groupBV >= r.minGroupBV) best = r.rank;
+  return best;
+}
+
+/** How far a member is from their next rank, for a progress bar. */
+export function nextRank(settings: MemberSettings, currentRank: string, groupBV: number) {
+  const idx = RANK_ORDER.indexOf((currentRank as (typeof RANK_ORDER)[number]) ?? 'Member');
+  const next = settings.ranks.find((r) => RANK_ORDER.indexOf(r.rank as (typeof RANK_ORDER)[number]) > idx);
+  if (!next) return null;
+  return { rank: next.rank, minGroupBV: next.minGroupBV, bonus: next.bonus, remaining: Math.max(0, next.minGroupBV - groupBV) };
+}
+
+/**
+ * Add `bv` to groupBV for every ancestor in `chain` (their own + their whole
+ * downline's volume), and promote anyone who has just crossed into a new
+ * rank — crediting that rank's one-time bonus to their wallet. Ranks never
+ * downgrade, even if `bv` is later reversed (a cancelled order shouldn't take
+ * back a trip/title someone already earned).
+ */
+export async function creditGroupBVAndRank(chain: Doc[], bv: number) {
+  if (!bv || !chain.length) return;
+  const settings = await getMemberSettings();
+  for (const ancestor of chain) {
+    await bumpUserCounter(ancestor._id, 'groupBV', bv);
+    const fresh = await db.users.findById(ancestor._id);
+    if (!fresh) continue;
+    const newGroupBV = Number(fresh.groupBV ?? 0);
+    const achieved = rankForGroupBV(settings, newGroupBV);
+    const achievedIdx = achieved ? RANK_ORDER.indexOf(achieved as (typeof RANK_ORDER)[number]) : 0;
+    const currentIdx = RANK_ORDER.indexOf((fresh.rank as (typeof RANK_ORDER)[number]) ?? 'Member');
+    if (achieved && achievedIdx > currentIdx) {
+      const bonus = settings.ranks
+        .filter((r) => RANK_ORDER.indexOf(r.rank as (typeof RANK_ORDER)[number]) > currentIdx && RANK_ORDER.indexOf(r.rank as (typeof RANK_ORDER)[number]) <= achievedIdx)
+        .reduce((s, r) => s + r.bonus, 0);
+      await db.users.updateById(ancestor._id, { rank: achieved });
+      if (bonus > 0) {
+        await postEntries([
+          {
+            user: ancestor._id,
+            type: 'commission',
+            amount: bonus,
+            status: 'available',
+            note: `Rank achievement bonus: ${achieved}`,
+          },
+        ]);
+      }
+      await createNotification({
+        userId: ancestor._id,
+        type: 'general',
+        title: 'Rank upgraded',
+        message: `Congratulations! You reached ${achieved} rank${bonus > 0 ? ` and earned a Rs. ${bonus.toLocaleString()} bonus` : ''}.`,
+        link: '/account/partner',
+      });
+    }
+  }
+}
+
+/** Reverse a BV credit along the chain (order cancelled/refunded). Does not touch rank or its bonus — already earned, kept. */
+export async function reverseGroupBV(chain: Doc[], bv: number) {
+  if (!bv || !chain.length) return;
+  for (const ancestor of chain) await bumpUserCounter(ancestor._id, 'groupBV', -bv);
 }
 
 // ---------------------------------------------------------------------------
@@ -187,7 +299,7 @@ async function setEntryStatus(entryId: string, status: EntryInput['status'], ext
 // Loyalty points and monthly BV (atomic counters on the user document)
 // ---------------------------------------------------------------------------
 /** Add (or with a negative delta, spend) a numeric counter on a user. Spending fails if it would go below zero. */
-export async function bumpUserCounter(userId: string, field: 'loyaltyPoints' | 'monthlyBV' | 'totalBV' | 'referredBV', delta: number) {
+export async function bumpUserCounter(userId: string, field: 'loyaltyPoints' | 'monthlyBV' | 'totalBV' | 'referredBV' | 'groupBV', delta: number) {
   if (!delta) return true;
   const sql = getSql();
   const now = new Date().toISOString();
@@ -206,8 +318,12 @@ export async function bumpUserCounter(userId: string, field: 'loyaltyPoints' | '
 // ---------------------------------------------------------------------------
 
 /**
- * Called right after an order is created. Books the pending commission and
- * credits points (BV) to the buyer (if a partner) and the sponsor's team BV.
+ * Called right after an order is created. Books a pending commission for
+ * every level in the sponsor chain (level 1 = direct sponsor, up to 5 by
+ * default), credits points (BV) to the buyer (if a partner), and credits
+ * group BV + checks rank promotions for every ancestor in the chain —
+ * including ancestors beyond the paid commission levels, since rank is
+ * about team size, not just who gets paid on this order.
  */
 export async function onOrderPlaced(order: Doc) {
   try {
@@ -216,27 +332,43 @@ export async function onOrderPlaced(order: Doc) {
       await bumpUserCounter(order.user, 'monthlyBV', m.bv);
       await bumpUserCounter(order.user, 'totalBV', m.bv);
     }
-    if (m.sponsor && m.commission > 0) {
+
+    // Multi-level commissions (new order shape). Falls back to the single
+    // m.sponsor/m.commission shape for any order placed before this existed.
+    const levels: { sponsor: string; sponsorCode?: string; level: number; pct: number; amount: number }[] =
+      m.commissions?.length ? m.commissions : m.sponsor && m.commission > 0 ? [{ sponsor: m.sponsor, level: 1, pct: m.commissionPct, amount: m.commission }] : [];
+
+    for (const lvl of levels) {
+      if (!(lvl.amount > 0)) continue;
       await postEntries([
         {
-          user: m.sponsor,
+          user: lvl.sponsor,
           type: 'commission',
-          amount: m.commission,
+          amount: lvl.amount,
           status: 'pending',
           order: order._id,
           orderNumber: order.orderNumber,
           fromUser: order.user ?? undefined,
-          note: `${m.commissionPct}% referral commission on order ${order.orderNumber}`,
+          note: `Level ${lvl.level} (${lvl.pct}%) commission on order ${order.orderNumber}`,
         },
       ]);
-      if (m.bv) await bumpUserCounter(m.sponsor, 'referredBV', m.bv);
+      if (lvl.level === 1 && m.bv) await bumpUserCounter(lvl.sponsor, 'referredBV', m.bv);
       await createNotification({
-        userId: m.sponsor,
+        userId: lvl.sponsor,
         type: 'general',
-        title: 'New referral order',
-        message: `Order ${order.orderNumber} earns you Rs. ${m.commission.toLocaleString()} once it is delivered.`,
+        title: lvl.level === 1 ? 'New referral order' : `Level ${lvl.level} team order`,
+        message: `Order ${order.orderNumber} earns you Rs. ${lvl.amount.toLocaleString()} once it is delivered.`,
         link: '/account/partner',
       });
+    }
+
+    // Group BV + rank: credit the WHOLE ancestor chain, even past the paid
+    // levels, and regardless of whether the buyer is a partner or a plain
+    // customer who bought through a partner's link (that's real team volume).
+    if (m.bv && m.sponsor) {
+      const directSponsor = await db.users.findById(m.sponsor);
+      const chain = await sponsorChain(directSponsor, 10);
+      await creditGroupBVAndRank(chain, m.bv);
     }
   } catch (err) {
     logger.error('onOrderPlaced failed', err);
@@ -253,20 +385,23 @@ export async function onOrderStatusChange(order: Doc, previousStatus: string) {
   const sql = getSql();
 
   try {
-    const commissionRows = await sql`select _id, data from wallet_entries where "order" = ${order._id} and type = 'commission' limit 1`;
-    const commission = commissionRows[0] as any;
+    // Every pending-or-available commission entry for this order — there can
+    // be several now (one per sponsor level), not just one.
+    const commissionRows = await sql`select _id, data from wallet_entries where "order" = ${order._id} and type = 'commission' and data->>'note' not like 'Rank achievement bonus%'`;
 
     if (status === 'delivered' && !CLOSED.includes(previousStatus)) {
-      // Commission becomes spendable; loyalty points are earned
-      if (commission && commission.data.status === 'pending') {
-        await setEntryStatus(commission._id, 'available', { releasedAt: new Date().toISOString() });
-        await createNotification({
-          userId: commission.data.user,
-          type: 'general',
-          title: 'Commission added to your wallet',
-          message: `Rs. ${Number(commission.data.amount).toLocaleString()} from order ${order.orderNumber} is now available.`,
-          link: '/account/partner?tab=wallet',
-        });
+      // Commissions become spendable; loyalty points are earned
+      for (const row of commissionRows as any[]) {
+        if (row.data.status === 'pending') {
+          await setEntryStatus(row._id, 'available', { releasedAt: new Date().toISOString() });
+          await createNotification({
+            userId: row.data.user,
+            type: 'general',
+            title: 'Commission added to your wallet',
+            message: `Rs. ${Number(row.data.amount).toLocaleString()} from order ${order.orderNumber} is now available.`,
+            link: '/account/partner?tab=wallet',
+          });
+        }
       }
       if (order.user && m.pointsEarned > 0 && !m.pointsCredited) {
         await bumpUserCounter(order.user, 'loyaltyPoints', m.pointsEarned);
@@ -277,14 +412,14 @@ export async function onOrderStatusChange(order: Doc, previousStatus: string) {
 
     if (CLOSED.includes(status) && !CLOSED.includes(previousStatus)) {
       const entries: EntryInput[] = [];
-      if (commission) {
-        if (commission.data.status === 'pending') {
-          await setEntryStatus(commission._id, 'cancelled', { cancelledAt: new Date().toISOString() });
-        } else if (commission.data.status === 'available') {
+      for (const row of commissionRows as any[]) {
+        if (row.data.status === 'pending') {
+          await setEntryStatus(row._id, 'cancelled', { cancelledAt: new Date().toISOString() });
+        } else if (row.data.status === 'available') {
           entries.push({
-            user: commission.data.user,
+            user: row.data.user,
             type: 'commission_reversal',
-            amount: -Number(commission.data.amount),
+            amount: -Number(row.data.amount),
             status: 'available',
             order: order._id,
             orderNumber: order.orderNumber,
@@ -317,7 +452,12 @@ export async function onOrderStatusChange(order: Doc, previousStatus: string) {
         await bumpUserCounter(order.user, 'monthlyBV', -m.bv);
         await bumpUserCounter(order.user, 'totalBV', -m.bv);
       }
-      if (m.sponsor && m.bv) await bumpUserCounter(m.sponsor, 'referredBV', -m.bv);
+      if (m.sponsor && m.bv && !m.bvReversed) {
+        await bumpUserCounter(m.sponsor, 'referredBV', -m.bv);
+        const directSponsor = await db.users.findById(m.sponsor);
+        const chain = await sponsorChain(directSponsor, 10);
+        await reverseGroupBV(chain, m.bv);
+      }
       await db.orders.updateById(order._id, { member: { ...m, bvReversed: true } });
     }
   } catch (err) {
@@ -337,17 +477,28 @@ async function postCredits(entries: EntryInput[]) {
   });
 }
 
-/** Admin edited an order's lines: keep a still-pending commission in step with the new total. */
+/** Admin edited an order's lines: keep each still-pending, per-level commission in step with the new total. */
 export async function recalcPendingCommission(order: Doc) {
   const m = order.member ?? {};
-  if (!m.sponsor || !m.commissionPct) return;
   const merchandise = Math.max(0, (order.subtotal ?? 0) - (order.discount ?? 0) - (order.manualDiscount ?? 0));
-  const amount = round((merchandise * m.commissionPct) / 100);
   const sql = getSql();
   const now = new Date().toISOString();
-  await sql`update wallet_entries set data = data || ${JSON.stringify({ amount, updatedAt: now })}::text::jsonb, updated_at = ${now}
-            where "order" = ${order._id} and type = 'commission' and status = 'pending'`;
-  await db.orders.updateById(order._id, { member: { ...m, commission: amount } });
+
+  const levels: { sponsor: string; level: number; pct: number }[] =
+    m.commissions?.length ? m.commissions : m.sponsor && m.commissionPct ? [{ sponsor: m.sponsor, level: 1, pct: m.commissionPct }] : [];
+  if (!levels.length) return;
+
+  let newCommissions = m.commissions ?? [];
+  for (const lvl of levels) {
+    const amount = round((merchandise * lvl.pct) / 100);
+    // Matched by sponsor (user), not by level text in the note — robust even
+    // for orders placed before per-level notes existed.
+    await sql`update wallet_entries set data = data || ${JSON.stringify({ amount, updatedAt: now })}::text::jsonb, updated_at = ${now}
+              where "order" = ${order._id} and type = 'commission' and status = 'pending' and "user" = ${lvl.sponsor}`;
+    newCommissions = newCommissions.map((c: any) => (c.level === lvl.level ? { ...c, amount } : c));
+  }
+  const newCommission = newCommissions.find((c: any) => c.level === 1)?.amount ?? 0;
+  await db.orders.updateById(order._id, { member: { ...m, commission: newCommission, commissions: newCommissions } });
 }
 
 export { postCredits };

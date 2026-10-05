@@ -52,14 +52,19 @@ export interface MemberProfile {
   lastMonthBV: number;
   totalBV: number;
   referredBV: number;
+  groupBV: number;
+  rank: string;
   wallet: WalletSummary;
   discountPct?: number;
   nextTier?: Tier | null;
+  nextRank?: { rank: string; minGroupBV: number; bonus: number; remaining: number } | null;
   links?: { store: string; join: string };
   sponsor?: { name: string; memberCode: string };
   settings: {
     referralCommissionPct: number;
+    levelCommissionPct: number[];
     partnerDiscountTiers: Tier[];
+    ranks: RankTier[];
     minWithdrawal: number;
     minRedeemPoints: number;
     pointValueRs: number;
@@ -69,9 +74,19 @@ export interface MemberProfile {
   };
 }
 
+export interface RankTier {
+  rank: string;
+  minGroupBV: number;
+  bonus: number;
+}
+
 export interface Programme {
   referralCommissionPct: number;
+  /** Commission % per sponsor level: [0] = direct sponsor, [1] = their sponsor, etc. */
+  levelCommissionPct: number[];
   partnerDiscountTiers: Tier[];
+  /** Group-BV (own + whole downline) rank ladder, with a one-time bonus per rank. */
+  ranks: RankTier[];
   wholesaleDefaultDiscountPct: number;
   wholesaleDefaultMinQty: number;
   minWithdrawal: number;
@@ -131,13 +146,15 @@ export interface AdminMember {
   monthlyBV: number;
   totalBV: number;
   referredBV: number;
+  groupBV: number;
+  rank: string;
   loyaltyPoints: number;
   createdAt: string;
   sponsor?: { name: string; memberCode: string } | null;
   wallet?: WalletSummary;
 }
 
-export type MemberSettings = Programme & { rsPerBV: number; couponsForMembers: boolean };
+export type MemberSettings = Programme & { rsPerBV: number; couponsForMembers: boolean; minActiveBVForOverride: number };
 
 export interface Quote {
   buyerType: 'customer' | 'partner' | 'business';
@@ -174,9 +191,11 @@ export const memberApi = {
   applyBusiness: (body: Record<string, unknown>) => d<MemberProfile>(api.post('/members/business/apply', body)),
   submitKyc: (body: Record<string, unknown>) => d<MemberProfile>(api.post('/members/kyc', body)),
   referrals: () =>
-    d<{ people: { _id: string; name: string; joinedAt: string; type: string; orders: number; commission: number }[]; guestOrders: { orders: number; commission: number } }>(
-      api.get('/members/referrals')
-    ),
+    d<{
+      people: { _id: string; name: string; joinedAt: string; type: string; orders: number; commission: number }[];
+      guestOrders: { orders: number; commission: number };
+      team: { totalMembers: number; perLevel: { level: number; count: number; partners: number }[]; groupBV: number; rank: string };
+    }>(api.get('/members/referrals')),
   wallet: () => d<{ summary: WalletSummary; entries: WalletEntry[]; withdrawals: Withdrawal[] }>(api.get('/members/wallet')),
   withdraw: (amount: number) => d<Withdrawal>(api.post('/members/withdrawals', { amount })),
   wholesalePrices: () => d<WholesalePrice[]>(api.get('/members/wholesale-prices')),

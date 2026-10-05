@@ -124,17 +124,25 @@ function Overview() {
     <div className="space-y-8">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat accent label="Wallet balance" value={money(member.wallet.available)} sub={member.wallet.pending > 0 ? `${money(member.wallet.pending)} on its way` : 'Ready to spend or withdraw'} />
-        <Stat label="Total earned" value={money(member.wallet.earned)} sub={`${member.settings.referralCommissionPct}% on referral orders`} />
+        <Stat label="Total earned" value={money(member.wallet.earned)} sub={`${member.settings.referralCommissionPct}% direct, more from your team`} />
         <Stat label="Your discount" value={`${member.discountPct ?? 0}%`} sub="On your own orders this month" />
-        <Stat label="Points this month" value={`${member.monthlyBV} BV`} sub={`Last month ${member.lastMonthBV} BV`} />
+        <Stat label="Rank" value={member.rank} sub={`Group BV ${member.groupBV.toLocaleString()}`} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="border border-line p-6">
           <h2 className="text-[1.3rem] font-light">Share and earn</h2>
           <p className="mt-2 text-[0.9rem] text-gray-600 font-light">
-            Anyone who shops or signs up through your links is linked to you. You earn {member.settings.referralCommissionPct}% on their orders once delivered.
+            Anyone who shops or signs up through your links is linked to you. You earn commission down {member.settings.levelCommissionPct.length} levels of your team, on every order once delivered.
           </p>
+          <ul className="mt-4 divide-y divide-line text-[0.85rem]">
+            {member.settings.levelCommissionPct.map((pct, i) => (
+              <li key={i} className="flex justify-between py-2">
+                <span className="font-light">Level {i + 1}{i === 0 ? ' (your direct team)' : ''}</span>
+                <span>{pct}%</span>
+              </li>
+            ))}
+          </ul>
           <div className="mt-5 space-y-4">
             {member.links && <CopyField label="Your shop link" value={member.links.store} />}
             {member.links && <CopyField label="Invite a partner" value={member.links.join} />}
@@ -165,6 +173,30 @@ function Overview() {
           <Link href="/shop" className="btn-line mt-5">Shop at your price</Link>
         </div>
       </div>
+
+      <div className="border border-line p-6">
+        <h2 className="text-[1.3rem] font-light">Rank: {member.rank}</h2>
+        {member.nextRank ? (
+          <>
+            <p className="mt-2 text-[0.9rem] text-gray-600 font-light">
+              {member.nextRank.remaining.toLocaleString()} more group BV (your team&apos;s combined points) unlocks <span className="font-medium">{member.nextRank.rank}</span> and a Rs. {member.nextRank.bonus.toLocaleString()} bonus.
+            </p>
+            <div className="mt-4 h-2 bg-tile rounded-full overflow-hidden">
+              <div className="h-full bg-rose" style={{ width: `${Math.min(100, (member.groupBV / member.nextRank.minGroupBV) * 100)}%` }} />
+            </div>
+          </>
+        ) : (
+          <p className="mt-2 text-[0.9rem] text-gray-600 font-light">You have reached the highest rank. 🎉</p>
+        )}
+        <ul className="mt-5 divide-y divide-line text-[0.9rem]">
+          {member.settings.ranks.map((r) => (
+            <li key={r.rank} className={cn('flex justify-between py-2.5', member.rank === r.rank && 'font-medium')}>
+              <span className="font-light">{r.rank} — {r.minGroupBV.toLocaleString()} group BV</span>
+              <span>Rs. {r.bonus.toLocaleString()} bonus</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       {member.sponsor && <p className="text-[0.85rem] text-muted">Your sponsor: {member.sponsor.name} ({member.sponsor.memberCode})</p>}
     </div>
   );
@@ -174,13 +206,32 @@ function Referrals() {
   const { data, isLoading } = useQuery({ queryKey: ['member-referrals'], queryFn: memberApi.referrals });
   if (isLoading) return <p className="text-muted">Loading…</p>;
   const people = data?.people ?? [];
+  const team = data?.team;
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <Stat label="People linked to you" value={people.length} />
+        <Stat label="Direct team" value={people.length} />
         <Stat label="Their orders" value={people.reduce((s, p) => s + p.orders, 0) + (data?.guestOrders.orders ?? 0)} />
         <Stat accent label="Commission from them" value={money(people.reduce((s, p) => s + p.commission, 0) + (data?.guestOrders.commission ?? 0))} />
       </div>
+
+      {team && team.perLevel.length > 0 && (
+        <div className="border border-line p-6">
+          <h2 className="text-[1.3rem] font-light">Your whole team, level by level</h2>
+          <p className="mt-2 text-[0.9rem] text-gray-600 font-light">
+            {team.totalMembers} people total across {team.perLevel.length} levels. Group BV: {team.groupBV.toLocaleString()} · Rank: {team.rank}
+          </p>
+          <ul className="mt-4 divide-y divide-line text-[0.9rem]">
+            {team.perLevel.map((l) => (
+              <li key={l.level} className="flex justify-between py-2.5">
+                <span className="font-light">Level {l.level}{l.level === 1 ? ' (direct)' : ''}</span>
+                <span>{l.count} people{l.partners ? ` · ${l.partners} partners` : ''}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {people.length === 0 ? (
         <Notice>Nobody is linked to you yet. Share your shop link from the Overview tab to get started.</Notice>
       ) : (

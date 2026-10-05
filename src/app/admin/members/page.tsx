@@ -169,7 +169,7 @@ function Applications({ kind }: { kind: 'partner' | 'business' | 'kyc' }) {
                               {m.partner?.address && <p>{m.partner.address}</p>}
                               {m.partner?.dateOfBirth && <p>Born {m.partner.dateOfBirth}</p>}
                               {m.partner?.experience && <p className="italic">“{m.partner.experience}”</p>}
-                              <p>BV this month {m.monthlyBV} · team BV {m.referredBV}</p>
+                              <p>BV this month {m.monthlyBV} · direct team BV {m.referredBV} · group BV {m.groupBV} · rank {m.rank}</p>
                             </div>
                           )}
                           <button onClick={() => setOpen(open === m._id ? null : m._id)} className="text-xs text-gray-500 underline mt-1">
@@ -431,8 +431,37 @@ function Settings() {
         }}
       >
         <h3 className="font-semibold">Brand Partners</h3>
-        <L label="Referral commission (%)" hint="Paid on every order from people a partner referred, after it is delivered.">
-          <input {...num('referralCommissionPct')} step="0.5" />
+        <div>
+          <span className="block text-sm font-medium mb-1">Commission by level</span>
+          <p className="text-xs text-gray-500 mb-2">Level 1 is the direct sponsor; level 2+ are their upline, paid when the order is delivered. A level only pays if that ancestor&apos;s own monthly BV meets the minimum below (level 1 always pays).</p>
+          <div className="space-y-2">
+            {form.levelCommissionPct.map((pct, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                <span className="w-16">Level {i + 1}</span>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={pct}
+                  onChange={(e) => setForm({ ...form, levelCommissionPct: form.levelCommissionPct.map((x, j) => (j === i ? Number(e.target.value) : x)) })}
+                  className="w-20 border border-gray-300 rounded-lg px-2 py-1.5"
+                />
+                <span>%</span>
+                {form.levelCommissionPct.length > 1 && (
+                  <button type="button" onClick={() => setForm({ ...form, levelCommissionPct: form.levelCommissionPct.filter((_, j) => j !== i) })} className="text-red-500 text-xs ml-2">
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+            {form.levelCommissionPct.length < 10 && (
+              <button type="button" onClick={() => setForm({ ...form, levelCommissionPct: [...form.levelCommissionPct, 1] })} className="text-sm underline">
+                Add a level
+              </button>
+            )}
+          </div>
+        </div>
+        <L label="Minimum monthly BV for level 2+ to pay out" hint="An upline only earns overrides (beyond level 1) while their own monthly BV is at least this.">
+          <input {...num('minActiveBVForOverride')} />
         </L>
         <div>
           <span className="block text-sm font-medium mb-1">Partner discount by monthly points</span>
@@ -470,6 +499,51 @@ function Settings() {
               className="text-sm underline"
             >
               Add a tier
+            </button>
+          </div>
+        </div>
+        <div>
+          <span className="block text-sm font-medium mb-1">Rank ladder (by group BV)</span>
+          <p className="text-xs text-gray-500 mb-2">Group BV is a partner&apos;s own points plus their entire downline&apos;s, at every level. Each rank pays a one-time bonus the moment it&apos;s reached, and ranks never go back down.</p>
+          <div className="space-y-2">
+            {form.ranks.map((r, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                <input
+                  type="text"
+                  value={r.rank}
+                  onChange={(e) => setForm({ ...form, ranks: form.ranks.map((x, j) => (j === i ? { ...x, rank: e.target.value } : x)) })}
+                  className="w-24 border border-gray-300 rounded-lg px-2 py-1.5"
+                />
+                <span>at</span>
+                <input
+                  type="number"
+                  value={r.minGroupBV}
+                  onChange={(e) => setForm({ ...form, ranks: form.ranks.map((x, j) => (j === i ? { ...x, minGroupBV: Number(e.target.value) } : x)) })}
+                  className="w-24 border border-gray-300 rounded-lg px-2 py-1.5"
+                />
+                <span>BV, bonus Rs</span>
+                <input
+                  type="number"
+                  value={r.bonus}
+                  onChange={(e) => setForm({ ...form, ranks: form.ranks.map((x, j) => (j === i ? { ...x, bonus: Number(e.target.value) } : x)) })}
+                  className="w-24 border border-gray-300 rounded-lg px-2 py-1.5"
+                />
+                {form.ranks.length > 1 && (
+                  <button type="button" onClick={() => setForm({ ...form, ranks: form.ranks.filter((_, j) => j !== i) })} className="text-red-500 text-xs ml-2">
+                    Remove
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                const last = form.ranks[form.ranks.length - 1];
+                setForm({ ...form, ranks: [...form.ranks, { rank: 'New rank', minGroupBV: (last?.minGroupBV ?? 0) + 1000, bonus: (last?.bonus ?? 500) + 500 }] });
+              }}
+              className="text-sm underline"
+            >
+              Add a rank
             </button>
           </div>
         </div>

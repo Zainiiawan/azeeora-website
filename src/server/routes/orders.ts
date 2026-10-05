@@ -36,6 +36,7 @@ import {
   postEntries,
   recalcPendingCommission,
   round,
+  sponsorChain,
   unitBV,
   walletSummary,
   wholesaleTerms,
@@ -290,7 +291,23 @@ async function buildQuote(input: {
     }
   }
   const commissionBase = Math.max(0, subtotal - discount - pointsValue);
-  const commission = sponsor ? round((commissionBase * ms.referralCommissionPct) / 100) : 0;
+
+  // Level-wise team commissions: level 1 is the direct sponsor computed
+  // above, levels 2+ are found by walking up the sponsor chain. An ancestor
+  // only earns level-2+ overrides while their own monthlyBV meets the
+  // programme's minimum (level 1 always pays, same as before).
+  const chain = sponsor ? await sponsorChain(sponsor, ms.levelCommissionPct.length) : [];
+  const commissions = chain
+    .map((s, i) => {
+      const level = i + 1;
+      if (level > 1 && Number(s.monthlyBV ?? 0) < ms.minActiveBVForOverride) return null;
+      const pct = ms.levelCommissionPct[i] ?? 0;
+      const amount = round((commissionBase * pct) / 100);
+      if (amount <= 0) return null;
+      return { sponsor: s, level, pct, amount };
+    })
+    .filter((c): c is { sponsor: Doc; level: number; pct: number; amount: number } => c !== null);
+  const commission = commissions[0]?.amount ?? 0;
 
   return {
     buyer,
@@ -318,7 +335,8 @@ async function buildQuote(input: {
     bv,
     sponsor,
     commission,
-    commissionPct: ms.referralCommissionPct,
+    commissionPct: commissions[0]?.pct ?? 0,
+    commissions,
     settings: ms,
     pickupPoint,
   };
@@ -512,6 +530,13 @@ orders.post('/', optionalAuthenticate, validate(checkoutSchema), async ({ body, 
       sponsorCode: q.sponsor?.memberCode,
       commission: q.commission,
       commissionPct: q.sponsor ? q.commissionPct : 0,
+      commissions: (q.commissions ?? []).map((c: { sponsor: Doc; level: number; pct: number; amount: number }) => ({
+        sponsor: c.sponsor._id,
+        sponsorCode: c.sponsor.memberCode,
+        level: c.level,
+        pct: c.pct,
+        amount: c.amount,
+      })),
       pointsRedeemed: q.pointsRedeemed,
       pointsEarned: q.pointsEarned,
       walletUsed: q.walletUsed,

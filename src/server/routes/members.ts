@@ -8,6 +8,7 @@ import {
   getMemberSettings,
   isBusiness,
   isPartner,
+  nextRank,
   nextTier,
   partnerDiscountPct,
   postEntries,
@@ -48,10 +49,14 @@ async function memberProfile(u: Doc) {
     lastMonthBV: Number(u.lastMonthBV ?? 0),
     totalBV: Number(u.totalBV ?? 0),
     referredBV: Number(u.referredBV ?? 0),
+    groupBV: Number(u.groupBV ?? 0),
+    rank: u.rank ?? 'Member',
     wallet: await walletSummary(u._id),
     settings: {
       referralCommissionPct: ms.referralCommissionPct,
+      levelCommissionPct: ms.levelCommissionPct,
       partnerDiscountTiers: ms.partnerDiscountTiers,
+      ranks: ms.ranks,
       minWithdrawal: ms.minWithdrawal,
       minRedeemPoints: ms.minRedeemPoints,
       pointValueRs: ms.pointValueRs,
@@ -63,6 +68,7 @@ async function memberProfile(u: Doc) {
   if (type === 'partner') {
     profile.discountPct = partnerDiscountPct(ms, monthlyBV);
     profile.nextTier = nextTier(ms, monthlyBV);
+    profile.nextRank = nextRank(ms, u.rank ?? 'Member', Number(u.groupBV ?? 0));
     profile.links = {
       store: `${siteUrl()}/?ref=${u.memberCode}`,
       join: `${siteUrl()}/join?ref=${u.memberCode}`,
@@ -90,7 +96,9 @@ members.get('/programme', async () => {
     message: 'Programme',
     data: {
       referralCommissionPct: ms.referralCommissionPct,
+      levelCommissionPct: ms.levelCommissionPct,
       partnerDiscountTiers: ms.partnerDiscountTiers,
+      ranks: ms.ranks,
       wholesaleDefaultDiscountPct: ms.wholesaleDefaultDiscountPct,
       wholesaleDefaultMinQty: ms.wholesaleDefaultMinQty,
       minWithdrawal: ms.minWithdrawal,
@@ -194,6 +202,7 @@ members.get('/referrals', authenticate, async ({ user }) => {
   const u = await db.users.findById(user!._id);
   if (!isPartner(u)) throw new ForbiddenError('Only Brand Partners have referrals');
   const sql = getSql();
+  const ms = await getMemberSettings();
   const people = await db.users.find({ referredBy: u!._id }, { sort: { createdAt: -1 }, limit: 500 });
   const commissions = await sql`
     select coalesce(sum(case when status <> 'cancelled' then (data->>'amount')::numeric end),0) as total, data->>'fromUser' as from_user, count(*)::int as orders
@@ -211,7 +220,31 @@ members.get('/referrals', authenticate, async ({ user }) => {
     };
   });
   const guest: any = byUser.get(null as any);
-  return json({ success: true, message: 'Referrals', data: { people: list, guestOrders: guest ? { orders: guest.orders, commission: Number(guest.total) } : { orders: 0, commission: 0 } } });
+
+  // Level-wise team: breadth-first down the referredBy tree, up to the same
+  // depth as paid commission levels. perLevel counts everyone (not just
+  // partners) because customers count toward group BV too.
+  const maxLevels = ms.levelCommissionPct.length;
+  const perLevel: { level: number; count: number; partners: number }[] = [];
+  let frontier = [u!._id];
+  const seen = new Set([u!._id]);
+  for (let level = 1; level <= maxLevels && frontier.length; level++) {
+    const next = await db.users.find({ referredBy: { $in: frontier } }, { limit: 2000 });
+    const fresh = next.filter((p) => !seen.has(p._id));
+    fresh.forEach((p) => seen.add(p._id));
+    perLevel.push({ level, count: fresh.length, partners: fresh.filter((p) => isPartner(p)).length });
+    frontier = fresh.map((p) => p._id);
+  }
+
+  return json({
+    success: true,
+    message: 'Referrals',
+    data: {
+      people: list,
+      guestOrders: guest ? { orders: guest.orders, commission: Number(guest.total) } : { orders: 0, commission: 0 },
+      team: { totalMembers: seen.size - 1, perLevel, groupBV: Number(u!.groupBV ?? 0), rank: u!.rank ?? 'Member' },
+    },
+  });
 });
 
 members.get('/wallet', authenticate, async ({ user, query }) => {
@@ -294,6 +327,8 @@ const adminUser = (u: Doc) => ({
   monthlyBV: u.monthlyBV ?? 0,
   totalBV: u.totalBV ?? 0,
   referredBV: u.referredBV ?? 0,
+  groupBV: u.groupBV ?? 0,
+  rank: u.rank ?? 'Member',
   loyaltyPoints: u.loyaltyPoints ?? 0,
   createdAt: u.createdAt,
 });
@@ -409,7 +444,10 @@ members.post('/admin/wallet-adjust', adminOnly, validate(adjustSchema), async ({
 
 const settingsSchema = z.object({
   referralCommissionPct: z.number().min(0).max(50),
+  levelCommissionPct: z.array(z.number().min(0).max(50)).min(1).max(10),
+  minActiveBVForOverride: z.number().min(0),
   partnerDiscountTiers: z.array(z.object({ minBV: z.number().min(0), pct: z.number().min(0).max(80) })).min(1).max(10),
+  ranks: z.array(z.object({ rank: z.string().min(1).max(30), minGroupBV: z.number().min(0), bonus: z.number().min(0) })).min(1).max(10),
   wholesaleDefaultDiscountPct: z.number().min(0).max(80),
   wholesaleDefaultMinQty: z.number().int().min(1).max(1000),
   minWithdrawal: z.number().min(0),
