@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useId, useState } from 'react';
 import { cn, formatPrice } from '@/lib/utils';
 
 export const money = (n: number | null | undefined) => formatPrice(Math.round(Number(n ?? 0)));
@@ -67,6 +67,69 @@ export function Stat({ label, value, sub, accent }: { label: string; value: Reac
 export function Notice({ tone = 'info', children }: { tone?: 'info' | 'error' | 'success'; children: React.ReactNode }) {
   const cls = tone === 'error' ? 'bg-red-50 text-red-800 border-red-200' : tone === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-tile text-ink border-line';
   return <div className={cn('px-4 py-3 border text-[0.9rem]', cls)}>{children}</div>;
+}
+
+/**
+ * CNIC front/back photo upload. Stores the uploaded image URL into the
+ * react-hook-form field named `name` via `setValue` — the field itself is
+ * a hidden text input so normal RHF validation (`required: true` etc.)
+ * still works on it.
+ */
+export function CnicUploadField({
+  label,
+  value,
+  error,
+  onChange,
+}: {
+  label: string;
+  value?: string;
+  error?: string;
+  onChange: (url: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const inputId = useId();
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    setLocalError(null);
+    setBusy(true);
+    try {
+      const [uploaded] = await mediaApiLazy().then((m) => m.mediaApi.upload([file]));
+      onChange(uploaded.url);
+    } catch {
+      setLocalError('Could not upload that photo. Please try again (JPG/PNG, under 5MB).');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <label htmlFor={inputId} className="block text-[0.8rem] mb-1.5 font-light">
+        {label}
+      </label>
+      <div className="flex items-center gap-3">
+        {value ? (
+          <a href={value} target="_blank" rel="noreferrer">
+            <img src={value} alt={label} className="h-16 w-24 object-cover border border-line" />
+          </a>
+        ) : (
+          <div className="h-16 w-24 border border-dashed border-line flex items-center justify-center text-[0.7rem] text-gray-400">No photo</div>
+        )}
+        <label htmlFor={inputId} className="btn-line cursor-pointer text-[0.8rem] py-2 px-3">
+          {busy ? 'Uploading…' : value ? 'Replace' : 'Upload'}
+        </label>
+        <input id={inputId} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={busy} onChange={(e) => handleFile(e.target.files?.[0])} />
+      </div>
+      {(error || localError) && <p className="mt-1.5 text-[0.75rem] text-red-600">{error || localError}</p>}
+    </div>
+  );
+}
+// Lazy import so this file (loaded broadly across member pages) doesn't pull
+// in the upload SDK unless a CNIC field is actually rendered.
+async function mediaApiLazy() {
+  return import('@/lib/api/mediaApi');
 }
 
 export function CopyField({ label, value }: { label: string; value: string }) {

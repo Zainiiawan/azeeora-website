@@ -406,6 +406,41 @@ export const sendOrderStatusEmail = async (
   );
 };
 
+/** Sent when an admin approves/rejects/suspends a Brand Partner, wholesale, or payout (KYC) application. */
+export const sendMembershipStatusEmail = async (
+  email: string,
+  firstName: string,
+  kind: 'partner' | 'business' | 'kyc',
+  status: 'approved' | 'rejected' | 'suspended',
+  memberCode?: string | null,
+  note?: string | null
+): Promise<void> => {
+  const label = kind === 'partner' ? 'Brand Partner' : kind === 'business' ? 'wholesale account' : 'payout details';
+  const dashboardLink = kind === 'business' ? `${siteUrl()}/account/business` : `${siteUrl()}/account/partner`;
+
+  if (status === 'approved') {
+    const heading = kind === 'kyc' ? 'Your payout details are verified' : `You're now a ${label}!`;
+    const body =
+      kind === 'kyc'
+        ? `<p>Your bank/payment details have been verified. You can now withdraw your available earnings any time from your dashboard.</p>`
+        : `<p>Congratulations, ${firstName}! Your ${label} application has been approved.</p>
+           ${memberCode ? `<p>Your member code is <strong>${memberCode}</strong> — share your shop and invite links to start earning.</p>` : ''}`;
+    await sendMail(
+      email,
+      kind === 'kyc' ? 'Your payout details are verified — AZEEORA COSMETICS' : `Welcome to the AZEEORA ${label} programme!`,
+      `<h2>${heading}</h2>${body}<p style="text-align:center;"><a href="${dashboardLink}" class="btn">Go to your dashboard</a></p>`
+    );
+    return;
+  }
+
+  const heading = status === 'rejected' ? `Your ${label} application` : `Your ${label} has been suspended`;
+  const body =
+    status === 'rejected'
+      ? `<p>Thank you for applying. Unfortunately we're not able to approve your ${label} application at this time.${note ? ` ${note}` : ''}</p>`
+      : `<p>Your ${label} has been suspended.${note ? ` ${note}` : ''} Please contact us if you have questions.</p>`;
+  await sendMail(email, heading + ' — AZEEORA COSMETICS', `<h2>${heading}</h2>${body}`);
+};
+
 export const sendWelcomeEmail = async (email: string, firstName: string): Promise<void> => {
   await sendMail(
     email,

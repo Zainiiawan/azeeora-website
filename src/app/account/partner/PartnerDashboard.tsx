@@ -10,7 +10,7 @@ import { RootState } from '@/store';
 import { memberApi, apiError } from '@/lib/api/memberApi';
 import { extrasApi, METRIC_LABEL } from '@/lib/api/extrasApi';
 import { useMember } from '@/lib/member/useMember';
-import { CopyField, Field, Notice, SelectField, Stat, StatusBadge, money } from '@/components/member/ui';
+import { CnicUploadField, CopyField, Field, Notice, SelectField, Stat, StatusBadge, money } from '@/components/member/ui';
 import { cn, formatDate } from '@/lib/utils';
 
 const TABS = [
@@ -398,8 +398,18 @@ function WalletTab({ onPayout }: { onPayout: () => void }) {
 function Payout() {
   const qc = useQueryClient();
   const { member } = useMember();
-  const form = useForm<{ cnic: string; method: string; accountTitle: string; accountNumber: string; bankName?: string }>({
-    defaultValues: { method: 'jazzcash' },
+  const form = useForm<{
+    cnic: string;
+    fullNameOnCnic: string;
+    fatherName: string;
+    cnicFrontImage: string;
+    cnicBackImage?: string;
+    method: string;
+    accountTitle: string;
+    accountNumber: string;
+    bankName?: string;
+  }>({
+    defaultValues: { method: 'jazzcash', cnicFrontImage: '' },
   });
   const method = form.watch('method');
   const submit = useMutation({
@@ -429,7 +439,20 @@ function Payout() {
           {method === 'bank' && <Field label="Bank name" {...form.register('bankName', { required: method === 'bank' })} />}
           <Field label="Account title" {...form.register('accountTitle', { required: true })} />
           <Field label={method === 'bank' ? 'Account number or IBAN' : 'Mobile account number'} {...form.register('accountNumber', { required: true })} />
-          <Field label="CNIC" placeholder="35202-1234567-1" {...form.register('cnic', { required: true })} />
+          <Field label="CNIC" placeholder="35202-1234567-1" hint="One CNIC can only be used for one account." error={form.formState.errors.cnic?.message} {...form.register('cnic', { required: true })} />
+          <Field label="Full name as on CNIC" placeholder="e.g. Ali Ahmed" error={form.formState.errors.fullNameOnCnic?.message} {...form.register('fullNameOnCnic', { required: true })} />
+          <Field label="Father's name" placeholder="e.g. Umer Ahmed" error={form.formState.errors.fatherName?.message} {...form.register('fatherName', { required: true })} />
+          <input type="hidden" {...form.register('cnicFrontImage', { required: true })} />
+          <input type="hidden" {...form.register('cnicBackImage')} />
+          <div className="grid grid-cols-2 gap-4">
+            <CnicUploadField
+              label="CNIC front photo"
+              value={form.watch('cnicFrontImage')}
+              error={form.formState.errors.cnicFrontImage?.message}
+              onChange={(url) => form.setValue('cnicFrontImage', url, { shouldValidate: true })}
+            />
+            <CnicUploadField label="CNIC back photo (optional)" value={form.watch('cnicBackImage')} onChange={(url) => form.setValue('cnicBackImage', url)} />
+          </div>
           {submit.isError && <Notice tone="error">{apiError(submit.error)}</Notice>}
           <button type="submit" disabled={submit.isPending} className="btn-ink justify-self-start">{submit.isPending ? 'Sending…' : 'Submit for verification'}</button>
         </form>

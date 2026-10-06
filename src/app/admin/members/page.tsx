@@ -170,6 +170,28 @@ function Applications({ kind }: { kind: 'partner' | 'business' | 'kyc' }) {
                               {m.partner?.dateOfBirth && <p>Born {m.partner.dateOfBirth}</p>}
                               {m.partner?.experience && <p className="italic">“{m.partner.experience}”</p>}
                               <p>BV this month {m.monthlyBV} · direct team BV {m.referredBV} · group BV {m.groupBV} · rank {m.rank}</p>
+                              {(m.partner?.fullNameOnCnic || m.partner?.fatherName) && (
+                                <p className="font-medium text-gray-700">
+                                  On CNIC: {m.partner?.fullNameOnCnic} {m.partner?.fatherName ? `· Father: ${m.partner.fatherName}` : ''}
+                                  {m.partner?.fullNameOnCnic && m.partner.fullNameOnCnic.trim().toLowerCase() !== `${m.firstName} ${m.lastName}`.trim().toLowerCase() && (
+                                    <span className="ml-2 text-amber-600">⚠ doesn&apos;t match account name — check carefully</span>
+                                  )}
+                                </p>
+                              )}
+                              {(m.partner?.cnicFrontImage || m.partner?.cnicBackImage) && (
+                                <div className="flex gap-2 mt-2">
+                                  {m.partner?.cnicFrontImage && (
+                                    <a href={m.partner.cnicFrontImage} target="_blank" rel="noreferrer">
+                                      <img src={m.partner.cnicFrontImage} alt="CNIC front" className="h-20 w-32 object-cover rounded border border-gray-300" />
+                                    </a>
+                                  )}
+                                  {m.partner?.cnicBackImage && (
+                                    <a href={m.partner.cnicBackImage} target="_blank" rel="noreferrer">
+                                      <img src={m.partner.cnicBackImage} alt="CNIC back" className="h-20 w-32 object-cover rounded border border-gray-300" />
+                                    </a>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                           <button onClick={() => setOpen(open === m._id ? null : m._id)} className="text-xs text-gray-500 underline mt-1">
@@ -192,6 +214,31 @@ function Applications({ kind }: { kind: 'partner' | 'business' | 'kyc' }) {
                           <p>{m.kyc?.accountTitle}</p>
                           <p className="text-gray-500 capitalize">{m.kyc?.method === 'bank' ? m.kyc?.bankName : m.kyc?.method} · <span className="font-mono">{m.kyc?.accountNumber}</span></p>
                           <p className="text-gray-500 font-mono text-xs">CNIC {m.kyc?.cnic}</p>
+                          {(m.kyc?.fullNameOnCnic || m.kyc?.fatherName) && (
+                            <p className="font-medium text-gray-700">
+                              On CNIC: {m.kyc?.fullNameOnCnic} {m.kyc?.fatherName ? `· Father: ${m.kyc.fatherName}` : ''}
+                              {m.kyc?.fullNameOnCnic && m.kyc.fullNameOnCnic.trim().toLowerCase() !== `${m.firstName} ${m.lastName}`.trim().toLowerCase() && (
+                                <span className="ml-2 text-amber-600">⚠ doesn&apos;t match account name</span>
+                              )}
+                              {m.kyc?.accountTitle && m.kyc.accountTitle.trim().toLowerCase() !== (m.kyc?.fullNameOnCnic ?? '').trim().toLowerCase() && (
+                                <span className="ml-2 text-amber-600">⚠ bank account title differs from CNIC name</span>
+                              )}
+                            </p>
+                          )}
+                          {(m.kyc?.cnicFrontImage || m.kyc?.cnicBackImage) && (
+                            <div className="flex gap-2 mt-2">
+                              {m.kyc?.cnicFrontImage && (
+                                <a href={m.kyc.cnicFrontImage} target="_blank" rel="noreferrer">
+                                  <img src={m.kyc.cnicFrontImage} alt="CNIC front" className="h-20 w-32 object-cover rounded border border-gray-300" />
+                                </a>
+                              )}
+                              {m.kyc?.cnicBackImage && (
+                                <a href={m.kyc.cnicBackImage} target="_blank" rel="noreferrer">
+                                  <img src={m.kyc.cnicBackImage} alt="CNIC back" className="h-20 w-32 object-cover rounded border border-gray-300" />
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </>
                       )}
                     </td>

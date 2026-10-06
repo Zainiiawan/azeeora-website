@@ -9,6 +9,10 @@ export interface PartnerInfo {
   phone?: string;
   whatsapp?: string;
   cnic?: string;
+  fullNameOnCnic?: string;
+  fatherName?: string;
+  cnicFrontImage?: string;
+  cnicBackImage?: string;
   city?: string;
   address?: string;
   dateOfBirth?: string;
@@ -37,6 +41,10 @@ export interface KycInfo {
   accountNumber: string;
   bankName?: string;
   cnic?: string;
+  fullNameOnCnic?: string;
+  fatherName?: string;
+  cnicFrontImage?: string;
+  cnicBackImage?: string;
   submittedAt?: string;
   note?: string;
 }

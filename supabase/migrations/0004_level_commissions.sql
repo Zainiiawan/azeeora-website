@@ -17,3 +17,8 @@ create unique index if not exists wallet_entries_commission_per_sponsor_key
 alter table public.users add column if not exists group_bv numeric generated always as (coalesce((data->>'groupBV')::numeric, 0)) stored;
 alter table public.users add column if not exists rank text generated always as (data->>'rank') stored;
 create index if not exists users_group_bv_idx on public.users (group_bv desc);
+
+-- Fast duplicate-CNIC lookups (one ID card should only ever back one
+-- partner/KYC account) used by findCnicConflict() in src/server/members.ts.
+create index if not exists users_partner_cnic_idx on public.users ((data #>> '{partner,cnic}'));
+create index if not exists users_kyc_cnic_idx on public.users ((data #>> '{kyc,cnic}'));

@@ -138,6 +138,29 @@ export async function findSponsor(code?: string | null): Promise<Doc | null> {
 }
 
 // ---------------------------------------------------------------------------
+// CNIC fraud check: one real person should not run two partner/KYC accounts
+// ---------------------------------------------------------------------------
+
+/**
+ * Looks for ANY other user who already has this CNIC number on an approved
+ * or pending Brand Partner application or payout (KYC) submission — i.e.
+ * someone already using this exact ID to become a partner or get verified
+ * for payouts. Rejected applications don't block a retry with the same
+ * CNIC (that account was turned down, not confirmed as a duplicate-abuse
+ * case), and a user re-submitting their OWN application never blocks
+ * themselves. `digits` must already be the CNIC with dashes stripped.
+ */
+export async function findCnicConflict(digits: string, currentUserId: string): Promise<{ userId: string; kind: 'partner' | 'kyc' } | null> {
+  const matches = await db.users.find({ $or: [{ 'partner.cnic': digits }, { 'kyc.cnic': digits }] }, { limit: 20 });
+  for (const other of matches) {
+    if (other._id === currentUserId) continue;
+    if (other.partner?.cnic === digits && ['approved', 'pending'].includes(other.partner?.status)) return { userId: other._id, kind: 'partner' };
+    if (other.kyc?.cnic === digits && ['approved', 'pending'].includes(other.kyc?.status)) return { userId: other._id, kind: 'kyc' };
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Level-wise team (multi-level commissions and group BV / rank)
 // ---------------------------------------------------------------------------
 

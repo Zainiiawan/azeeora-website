@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { db, getSql, Doc } from '../db';
 import { Router, json, validate, authenticate, adminOnly, BadRequestError, NotFoundError, ForbiddenError } from '../http';
 import { createNotification, notifyAdmins, getSettings, applyProductDiscount } from '../commerce';
+import { sendMembershipStatusEmail } from '../email';
 import {
   MEMBER_DEFAULTS,
   accountType,
@@ -17,6 +18,7 @@ import {
   walletSummary,
   wholesaleTerms,
   findSponsor,
+  findCnicConflict,
 } from '../members';
 
 export const members = new Router();
@@ -122,6 +124,10 @@ const partnerApplySchema = z.object({
   phone,
   whatsapp: z.string().max(20).optional(),
   cnic,
+  fullNameOnCnic: z.string().min(2).max(80),
+  fatherName: z.string().min(2).max(80),
+  cnicFrontImage: z.string().url('Please upload a photo of the front of your CNIC'),
+  cnicBackImage: z.string().url().optional(),
   city: z.string().min(2).max(60),
   address: z.string().max(200).optional(),
   dateOfBirth: z.string().max(20).optional(),
@@ -139,6 +145,18 @@ members.post('/partner/apply', authenticate, validate(partnerApplySchema), async
   if (u.partner?.status === 'pending') throw new BadRequestError('Your application is already under review');
   if (u.partner?.status === 'suspended') throw new ForbiddenError('Your partner account is suspended. Please contact us.');
 
+  const cnicDigits = body.cnic.replace(/-/g, '');
+  const conflict = await findCnicConflict(cnicDigits, u._id);
+  if (conflict) {
+    await notifyAdmins({
+      type: 'general',
+      title: 'Blocked duplicate CNIC signup',
+      message: `${u.firstName} ${u.lastName} (${u.email}) tried to apply as a Brand Partner with a CNIC already on file for another account.`,
+      link: '/admin/members?tab=partners',
+    });
+    throw new BadRequestError('This CNIC is already registered on another account. One ID card can only be used for one account — please contact support if this is a mistake.');
+  }
+
   if (!u.referredBy && body.refCode) {
     const s = await findSponsor(body.refCode);
     if (!s) throw new BadRequestError('That referral code is not valid');
@@ -147,7 +165,7 @@ members.post('/partner/apply', authenticate, validate(partnerApplySchema), async
   const { agreeTerms, refCode, ...details } = body;
   void agreeTerms;
   void refCode;
-  u.partner = { ...details, cnic: details.cnic.replace(/-/g, ''), status: 'pending', appliedAt: new Date().toISOString() };
+  u.partner = { ...details, cnic: cnicDigits, status: 'pending', appliedAt: new Date().toISOString() };
   if (!u.phone) u.phone = body.phone;
   await db.users.save(u);
   await notifyAdmins({ type: 'general', title: 'New Brand Partner application', message: `${u.firstName} ${u.lastName} applied to become a Brand Partner.`, link: '/admin/members?tab=partners' });
@@ -181,6 +199,10 @@ members.post('/business/apply', authenticate, validate(businessApplySchema), asy
 
 const kycSchema = z.object({
   cnic,
+  fullNameOnCnic: z.string().min(2).max(80),
+  fatherName: z.string().min(2).max(80),
+  cnicFrontImage: z.string().url('Please upload a photo of the front of your CNIC'),
+  cnicBackImage: z.string().url().optional(),
   method: z.enum(['bank', 'jazzcash', 'easypaisa']),
   accountTitle: z.string().min(2).max(80),
   accountNumber: z.string().min(6).max(34),
@@ -192,7 +214,20 @@ members.post('/kyc', authenticate, validate(kycSchema), async ({ body, user }) =
   if (!u) throw new NotFoundError('User');
   if (u.kyc?.status === 'pending') throw new BadRequestError('Your details are already under review');
   if (body.method === 'bank' && !body.bankName) throw new BadRequestError('Bank name is required');
-  u.kyc = { ...body, cnic: body.cnic.replace(/-/g, ''), status: 'pending', submittedAt: new Date().toISOString() };
+
+  const cnicDigits = body.cnic.replace(/-/g, '');
+  const conflict = await findCnicConflict(cnicDigits, u._id);
+  if (conflict) {
+    await notifyAdmins({
+      type: 'general',
+      title: 'Blocked duplicate CNIC payout submission',
+      message: `${u.firstName} ${u.lastName} (${u.email}) tried to submit payout details with a CNIC already on file for another account.`,
+      link: '/admin/members?tab=kyc',
+    });
+    throw new BadRequestError('This CNIC is already registered on another account. One ID card can only be used for one account — please contact support if this is a mistake.');
+  }
+
+  u.kyc = { ...body, cnic: cnicDigits, status: 'pending', submittedAt: new Date().toISOString() };
   await db.users.save(u);
   await notifyAdmins({ type: 'general', title: 'Payout details to verify', message: `${u.firstName} ${u.lastName} submitted payout details.`, link: '/admin/members?tab=kyc' });
   return json({ success: true, message: 'Details submitted for verification', data: await memberProfile(u) }, 201);
@@ -490,8 +525,8 @@ members.post('/admin/close-month', adminOnly, async ({ user: admin }) => {
 const decisionSchema = z.object({ action: z.enum(['approve', 'reject', 'suspend', 'reinstate']), note: z.string().max(300).optional() });
 
 members.post('/admin/:userId/:kind', adminOnly, validate(decisionSchema), async ({ params, body, user: admin }) => {
-  const kind = params.kind;
-  if (!['partner', 'business', 'kyc'].includes(kind)) throw new NotFoundError('Route');
+  if (!['partner', 'business', 'kyc'].includes(params.kind)) throw new NotFoundError('Route');
+  const kind = params.kind as 'partner' | 'business' | 'kyc';
   const u = await db.users.findById(params.userId);
   if (!u) throw new NotFoundError('User');
   const rec = u[kind];
@@ -524,6 +559,9 @@ members.post('/admin/:userId/:kind', adminOnly, validate(decisionSchema), async 
     message: messages[rec.status],
     link: kind === 'business' ? '/account/business' : '/account/partner',
   });
+  if (u.email && ['approved', 'rejected', 'suspended'].includes(rec.status)) {
+    void sendMembershipStatusEmail(u.email, u.firstName, kind, rec.status as 'approved' | 'rejected' | 'suspended', u.memberCode, note);
+  }
   return json({ success: true, message: `Updated`, data: adminUser(u) });
 });
 
