@@ -93,6 +93,8 @@ export const register = createAsyncThunk(
       password: string;
       confirmPassword: string;
       phone?: string;
+      cnic: string;
+      refCode?: string;
     },
     { rejectWithValue }
   ) => {

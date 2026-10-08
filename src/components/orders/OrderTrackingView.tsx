@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Truck, CheckCircle, Clock, MapPin, ExternalLink } from 'lucide-react';
 import { Order } from '@/lib/api/orderApi';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice, formatDate, getCourierTrackingUrl } from '@/lib/utils';
 import { ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '../../shared';
 import Button from '@/components/ui/Button';
 
@@ -61,9 +61,9 @@ export default function OrderTrackingView({ order }: { order: Order }) {
             {order.courierName && (
               <p className="text-sm"><strong>Courier:</strong> {order.courierName}</p>
             )}
-            {order.trackingUrl && (
+            {(order.trackingUrl || getCourierTrackingUrl(order.courierName || '', order.trackingNumber || '')) && (
               <a
-                href={order.trackingUrl}
+                href={order.trackingUrl || getCourierTrackingUrl(order.courierName || '', order.trackingNumber || '')!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm text-rose-gold hover:underline mt-2"

@@ -561,8 +561,14 @@ function CheckoutContent() {
                     <div className="flex justify-between font-semibold text-black"><span>To pay</span><span>{formatPrice(amountDue)}</span></div>
                   </>
                 )}
+                {quote && quote.bv > 0 && (
+                  <div className="flex justify-between items-center bg-[#fcf5f7] border border-rose/20 px-3 py-1.5 rounded text-xs text-rose font-medium">
+                    <span>✨ Order Points (BV / BP):</span>
+                    <span className="font-bold">{quote.bv} BP</span>
+                  </div>
+                )}
                 {quote?.notices.map((n) => <p key={n} className="text-xs text-gray-500">{n}</p>)}
-                {quote && quote.pointsEarned > 0 && <p className="text-xs text-gray-500">You will earn {quote.pointsEarned} loyalty points when this order is delivered.</p>}
+                {quote && quote.pointsEarned > 0 && <p className="text-xs text-gray-500">🎁 You will earn {quote.pointsEarned} loyalty points when this order is delivered.</p>}
                 {quote?.referredBy && <p className="text-xs text-gray-500">Shopping with {quote.referredBy}, Azeeora Brand Partner.</p>}
               </div>
               

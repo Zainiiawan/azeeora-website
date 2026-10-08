@@ -126,8 +126,8 @@ const partnerApplySchema = z.object({
   cnic,
   fullNameOnCnic: z.string().min(2).max(80),
   fatherName: z.string().min(2).max(80),
-  cnicFrontImage: z.string().url('Please upload a photo of the front of your CNIC'),
-  cnicBackImage: z.string().url().optional(),
+  cnicFrontImage: z.string().url().optional().or(z.literal('')).or(z.null()),
+  cnicBackImage: z.string().url().optional().or(z.literal('')).or(z.null()),
   city: z.string().min(2).max(60),
   address: z.string().max(200).optional(),
   dateOfBirth: z.string().max(20).optional(),
@@ -154,7 +154,7 @@ members.post('/partner/apply', authenticate, validate(partnerApplySchema), async
       message: `${u.firstName} ${u.lastName} (${u.email}) tried to apply as a Brand Partner with a CNIC already on file for another account.`,
       link: '/admin/members?tab=partners',
     });
-    throw new BadRequestError('This CNIC is already registered on another account. One ID card can only be used for one account — please contact support if this is a mistake.');
+    throw new BadRequestError('This CNIC number is already registered on another account. One CNIC cannot be used for multiple accounts.');
   }
 
   if (!u.referredBy && body.refCode) {
@@ -166,6 +166,7 @@ members.post('/partner/apply', authenticate, validate(partnerApplySchema), async
   void agreeTerms;
   void refCode;
   u.partner = { ...details, cnic: cnicDigits, status: 'pending', appliedAt: new Date().toISOString() };
+  u.cnic = cnicDigits;
   if (!u.phone) u.phone = body.phone;
   await db.users.save(u);
   await notifyAdmins({ type: 'general', title: 'New Brand Partner application', message: `${u.firstName} ${u.lastName} applied to become a Brand Partner.`, link: '/admin/members?tab=partners' });
@@ -201,8 +202,8 @@ const kycSchema = z.object({
   cnic,
   fullNameOnCnic: z.string().min(2).max(80),
   fatherName: z.string().min(2).max(80),
-  cnicFrontImage: z.string().url('Please upload a photo of the front of your CNIC'),
-  cnicBackImage: z.string().url().optional(),
+  cnicFrontImage: z.string().url().optional().or(z.literal('')).or(z.null()),
+  cnicBackImage: z.string().url().optional().or(z.literal('')).or(z.null()),
   method: z.enum(['bank', 'jazzcash', 'easypaisa']),
   accountTitle: z.string().min(2).max(80),
   accountNumber: z.string().min(6).max(34),
@@ -224,10 +225,11 @@ members.post('/kyc', authenticate, validate(kycSchema), async ({ body, user }) =
       message: `${u.firstName} ${u.lastName} (${u.email}) tried to submit payout details with a CNIC already on file for another account.`,
       link: '/admin/members?tab=kyc',
     });
-    throw new BadRequestError('This CNIC is already registered on another account. One ID card can only be used for one account — please contact support if this is a mistake.');
+    throw new BadRequestError('This CNIC number is already registered on another account. One CNIC cannot be used for multiple accounts.');
   }
 
   u.kyc = { ...body, cnic: cnicDigits, status: 'pending', submittedAt: new Date().toISOString() };
+  u.cnic = cnicDigits;
   await db.users.save(u);
   await notifyAdmins({ type: 'general', title: 'Payout details to verify', message: `${u.firstName} ${u.lastName} submitted payout details.`, link: '/admin/members?tab=kyc' });
   return json({ success: true, message: 'Details submitted for verification', data: await memberProfile(u) }, 201);
@@ -261,21 +263,69 @@ members.get('/referrals', authenticate, async ({ user }) => {
   // partners) because customers count toward group BV too.
   const maxLevels = ms.levelCommissionPct.length;
   const perLevel: { level: number; count: number; partners: number }[] = [];
+  const treeNodes: {
+    _id: string;
+    name: string;
+    memberCode: string | null;
+    level: number;
+    sponsorId: string;
+    type: 'business' | 'partner' | 'customer';
+    rank: string;
+    monthlyBV: number;
+    groupBV: number;
+    joinedAt: string;
+  }[] = [];
   let frontier = [u!._id];
   const seen = new Set([u!._id]);
   for (let level = 1; level <= maxLevels && frontier.length; level++) {
     const next = await db.users.find({ referredBy: { $in: frontier } }, { limit: 2000 });
     const fresh = next.filter((p) => !seen.has(p._id));
-    fresh.forEach((p) => seen.add(p._id));
+    fresh.forEach((p) => {
+      seen.add(p._id);
+      treeNodes.push({
+        _id: p._id,
+        name: maskName(p),
+        memberCode: p.memberCode ?? null,
+        level,
+        sponsorId: p.referredBy,
+        type: accountType(p),
+        rank: p.rank ?? 'Member',
+        monthlyBV: Number(p.monthlyBV ?? 0),
+        groupBV: Number(p.groupBV ?? 0),
+        joinedAt: p.referredAt ?? p.createdAt,
+      });
+    });
     perLevel.push({ level, count: fresh.length, partners: fresh.filter((p) => isPartner(p)).length });
     frontier = fresh.map((p) => p._id);
   }
+
+  // Level-wise commission earnings
+  const levelEarningsRows = await sql`
+    select
+      substring(data->>'note' from 'Level ([0-9]+)') as lvl,
+      coalesce(sum(case when status <> 'cancelled' then (data->>'amount')::numeric end), 0) as total,
+      count(*)::int as orders
+    from wallet_entries
+    where "user" = ${u!._id} and type = 'commission' and data->>'note' like 'Level %'
+    group by lvl`;
+  const levelCommissions = ms.levelCommissionPct.map((pct, idx) => {
+    const lvlNum = String(idx + 1);
+    const row: any = (levelEarningsRows as any[]).find((r) => r.lvl === lvlNum);
+    return {
+      level: idx + 1,
+      pct,
+      orders: row ? Number(row.orders) : 0,
+      amount: row ? Number(row.total) : 0,
+    };
+  });
 
   return json({
     success: true,
     message: 'Referrals',
     data: {
       people: list,
+      tree: treeNodes,
+      levelCommissions,
       guestOrders: guest ? { orders: guest.orders, commission: Number(guest.total) } : { orders: 0, commission: 0 },
       team: { totalMembers: seen.size - 1, perLevel, groupBV: Number(u!.groupBV ?? 0), rank: u!.rank ?? 'Member' },
     },

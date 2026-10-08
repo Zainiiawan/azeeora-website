@@ -53,7 +53,7 @@ const baseEmailTemplate = (content: string) => `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AZEEORA COSMETICS</title>
+  <title>Ayeza Cosmetics</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
     .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
@@ -74,13 +74,13 @@ const baseEmailTemplate = (content: string) => `
 <body>
   <div class="container">
     <div class="header">
-      <img src="${siteUrl()}/icon.png" alt="AZEEORA COSMETICS Logo">
-      <h1>AZEEORA COSMETICS</h1>
+      <img src="${siteUrl()}/icon.png" alt="Ayeza Cosmetics Logo">
+      <h1>Ayeza Cosmetics</h1>
       <p>Luxury Beauty, Redefined</p>
     </div>
     <div class="content">${content}</div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} AZEEORA COSMETICS. All rights reserved.</p>
+      <p>© ${new Date().getFullYear()} Ayeza Cosmetics. All rights reserved.</p>
       <p><a href="${siteUrl()}">${siteUrl().replace(/^https?:\/\//, '')}</a></p>
     </div>
   </div>
@@ -105,7 +105,7 @@ const sendMail = async (
 
     if (resend) {
       // ── Primary: Resend API (HTTPS, no port blocking) ──────────────────
-      const fromAddress = process.env.RESEND_FROM || 'AZEEORA COSMETICS <onboarding@resend.dev>';
+      const fromAddress = process.env.RESEND_FROM || 'Ayeza Cosmetics <onboarding@resend.dev>';
       const { error } = await resend.emails.send({
         from: fromAddress,
         to: [to],
@@ -148,7 +148,7 @@ export const sendVerificationEmail = async (email: string, firstName: string, to
   const verifyUrl = `${siteUrl()}/auth/verify-email?token=${token}`;
   await sendMail(
     email,
-    'Welcome to AZEEORA COSMETICS — Verify Your Email',
+    'Welcome to Ayeza Cosmetics — Verify Your Email',
     `
       <h2>Welcome, ${firstName}!</h2>
       <p>Please verify your email to activate your account.</p>
@@ -163,7 +163,7 @@ export const sendVerificationEmail = async (email: string, firstName: string, to
 export const sendOtpEmail = async (email: string, firstName: string, otp: string): Promise<void> => {
   await sendMail(
     email,
-    'AZEEORA COSMETICS — Your Verification Code',
+    'Ayeza Cosmetics — Your Verification Code',
     `
       <h2>Verify Your Email</h2>
       <p>Hi ${firstName}, your verification code is:</p>
@@ -180,7 +180,7 @@ export const sendOtpEmail = async (email: string, firstName: string, otp: string
 export const sendPasswordResetOtpEmail = async (email: string, firstName: string, otp: string): Promise<void> => {
   await sendMail(
     email,
-    'AZEEORA COSMETICS — Password Reset Verification Code',
+    'Ayeza Cosmetics — Password Reset Verification Code',
     `
       <h2>Reset Your Password</h2>
       <p>Hi ${firstName}, we received a password reset request for your account.</p>

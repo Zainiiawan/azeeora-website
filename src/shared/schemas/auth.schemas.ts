@@ -17,6 +17,10 @@ export const registerSchema = z.object({
     .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
   confirmPassword: z.string(),
   phone: z.string().optional(),
+  cnic: z
+    .string({ required_error: 'CNIC number is required' })
+    .min(1, 'CNIC number is required')
+    .regex(/^\d{5}-?\d{7}-?\d$/, 'CNIC format must be like 35202-1234567-1 (13 digits)'),
   refCode: z.string().max(20).optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Passwords do not match',

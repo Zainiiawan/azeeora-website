@@ -256,6 +256,16 @@ export default function ProductPageClient({ initialProductData }: { initialProdu
               </p>
             )}
 
+            {/* BP Points & Loyalty Rewards */}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#fcf5f7] border border-rose/30 text-rose text-[0.82rem] font-semibold rounded-full">
+                ✨ Earn {typeof product.bv === 'number' && product.bv >= 0 ? product.bv : Math.max(1, Math.round(effectivePrice / 100))} BP / BV Points
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-50 border border-gray-200 text-gray-700 text-[0.82rem] font-medium rounded-full">
+                🎁 Earn {Math.max(1, Math.round(effectivePrice / 100))} Reward Points
+              </span>
+            </div>
+
             {product.shortDescription && <p className="mt-5 text-[0.98rem] text-gray-600 font-light leading-relaxed">{product.shortDescription}</p>}
 
             <div className="mt-8">

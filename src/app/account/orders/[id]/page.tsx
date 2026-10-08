@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { orderApi } from '@/lib/api/orderApi';
-import { formatPrice, formatDate } from '@/lib/utils';
+import { formatPrice, formatDate, getCourierTrackingUrl } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import OrderTimeline, { buildOrderTimeline } from '@/components/orders/OrderTimeline';
 import { useSelector } from 'react-redux';
@@ -156,7 +156,15 @@ export default function OrderTrackingPage() {
                 </div>
                 <p className="text-gray-500 pt-2 capitalize">Method: {order.paymentMethod}</p>
                 {order.trackingNumber && (
-                  <p className="text-gray-500">Tracking: {order.trackingNumber}</p>
+                  <div className="text-gray-500 pt-2 border-t">
+                    <p>Courier: <span className="font-medium text-gray-900">{order.courierName || 'N/A'}</span></p>
+                    <p>Tracking: <span className="font-medium text-gray-900">{order.trackingNumber}</span></p>
+                    {getCourierTrackingUrl(order.courierName || '', order.trackingNumber) && (
+                      <a href={getCourierTrackingUrl(order.courierName || '', order.trackingNumber)!} target="_blank" rel="noreferrer" className="text-rose-gold text-xs font-semibold hover:underline mt-1 inline-block">
+                        Track Shipment &rarr;
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

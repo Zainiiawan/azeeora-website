@@ -1,9 +1,10 @@
 import { config } from '@/lib/config';
 import { Metadata } from 'next';
-import { blogPosts } from '@/lib/data/blog';
+import { db } from '@/server/db';
 import BlogCard from '@/components/blog/BlogCard';
 import BlogSidebar from '@/components/blog/BlogSidebar';
 import Link from 'next/link';
+import { BlogPost } from '@/lib/api/analyticsApi';
 
 export const metadata: Metadata = {
   title: 'Beauty Blog & Skincare Tips | Azeeora Cosmetics',
@@ -16,13 +17,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function BlogListingPage() {
-  const featuredPost = blogPosts[0];
-  const remainingPosts = blogPosts.slice(1);
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function BlogListingPage() {
+  const dbPosts = await db.blogPosts.find({ isPublished: true }, { sort: { publishDate: -1, createdAt: -1 } });
+  
+  // Also load static posts as fallback if DB is empty, just so old ones aren't lost immediately
+  const { blogPosts: staticPosts } = await import('@/lib/data/blog');
+  const allPosts = dbPosts.length > 0 ? (dbPosts as any[] as BlogPost[]) : (staticPosts as unknown as BlogPost[]);
+
+  const featuredPost = allPosts[0];
+  const remainingPosts = allPosts.slice(1);
   
   // Extract unique categories and tags for the sidebar
-  const categories = Array.from(new Set(blogPosts.flatMap(post => post.categories)));
-  const tags = Array.from(new Set(blogPosts.flatMap(post => post.tags)));
+  const categories = Array.from(new Set(allPosts.flatMap(post => post.categories || [])));
+  const tags = Array.from(new Set(allPosts.flatMap(post => post.tags || [])));
 
   // Generate CollectionPage JSON-LD Schema
   const jsonLd = {
@@ -31,15 +41,15 @@ export default function BlogListingPage() {
     name: 'Azeeora Cosmetics Beauty Blog',
     description: 'Expert skincare tips, makeup tutorials, and beauty news.',
     url: `${config.getBaseUrl()}/blog`,
-    hasPart: blogPosts.map((post) => ({
+    hasPart: allPosts.map((post) => ({
       '@type': 'Article',
       headline: post.title,
       url: `${config.getBaseUrl()}/blog/${post.slug}`,
       author: {
         '@type': 'Person',
-        name: post.author,
+        name: post.author || 'Admin',
       },
-      datePublished: post.publishDate,
+      datePublished: post.publishDate || post.createdAt,
     }))
   };
 

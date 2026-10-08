@@ -18,7 +18,7 @@ type FormData = {
   cnic: string;
   fullNameOnCnic: string;
   fatherName: string;
-  cnicFrontImage: string;
+  cnicFrontImage?: string;
   cnicBackImage?: string;
   city: string;
   address?: string;
@@ -229,17 +229,16 @@ export default function JoinClient() {
             <form onSubmit={form.handleSubmit((d) => apply.mutate(d))} className="mt-6 grid sm:grid-cols-2 gap-4">
               <Field label="Mobile number" placeholder="03XX XXXXXXX" {...form.register('phone', { required: true })} />
               <Field label="WhatsApp (optional)" placeholder="03XX XXXXXXX" {...form.register('whatsapp')} />
-              <Field label="CNIC" placeholder="35202-1234567-1" hint="Needed to pay you. One CNIC can only be used for one account." error={form.formState.errors.cnic?.message} {...form.register('cnic', { required: true })} />
+              <Field label="CNIC" placeholder="35202-1234567-1" hint="One CNIC can only be registered once. Already registered CNIC cannot be reused." error={form.formState.errors.cnic?.message} {...form.register('cnic', { required: true })} />
               <Field label="Full name as on CNIC" placeholder="e.g. Ali Ahmed" error={form.formState.errors.fullNameOnCnic?.message} {...form.register('fullNameOnCnic', { required: true })} />
               <Field label="Father's name" placeholder="e.g. Umer Ahmed" error={form.formState.errors.fatherName?.message} {...form.register('fatherName', { required: true })} />
-              <input type="hidden" {...form.register('cnicFrontImage', { required: true })} />
+              <input type="hidden" {...form.register('cnicFrontImage')} />
               <input type="hidden" {...form.register('cnicBackImage')} />
               <div className="sm:col-span-2 grid grid-cols-2 gap-4">
                 <CnicUploadField
-                  label="CNIC front photo"
+                  label="CNIC front photo (optional)"
                   value={form.watch('cnicFrontImage')}
-                  error={form.formState.errors.cnicFrontImage?.message}
-                  onChange={(url) => form.setValue('cnicFrontImage', url, { shouldValidate: true })}
+                  onChange={(url) => form.setValue('cnicFrontImage', url)}
                 />
                 <CnicUploadField label="CNIC back photo (optional)" value={form.watch('cnicBackImage')} onChange={(url) => form.setValue('cnicBackImage', url)} />
               </div>

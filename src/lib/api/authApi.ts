@@ -12,6 +12,8 @@ export interface RegisterData {
   password: string;
   confirmPassword: string;
   phone?: string;
+  cnic: string;
+  refCode?: string;
 }
 
 export interface User {

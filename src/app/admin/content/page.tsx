@@ -16,6 +16,7 @@ const TABS = [
   ['training', 'Training'],
   ['pickup', 'Pickup points'],
   ['reports', 'Reports'],
+  ['blog', 'Blog posts'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
@@ -61,6 +62,7 @@ function ContentAdmin() {
         {tab === 'training' && <Trainings />}
         {tab === 'pickup' && <Pickup />}
         {tab === 'reports' && <Reports />}
+        {tab === 'blog' && <BlogAdmin />}
       </div>
     </div>
   );
@@ -379,6 +381,68 @@ function Reports() {
         ))}
       </div>
       {error && <p className="md:col-span-2 text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+import { blogApi, BlogPost } from '@/lib/api/analyticsApi';
+
+function BlogAdmin() {
+  const qc = useQueryClient();
+  const { data = [] } = useQuery({ queryKey: ['admin-blog'], queryFn: blogApi.adminAll });
+  const [form, setForm] = useState<Partial<BlogPost> | null>(null);
+
+  const save = useMutation({
+    mutationFn: (p: Partial<BlogPost>) => p._id ? blogApi.update(p._id, p) : blogApi.create(p),
+    onSuccess: () => { setForm(null); qc.invalidateQueries({ queryKey: ['admin-blog'] }); },
+  });
+  const remove = useMutation({
+    mutationFn: blogApi.remove,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-blog'] }),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-600">Write and manage beauty blog posts. Posts appear on the /blog page.</p>
+        {!form && <button onClick={() => setForm({ title: '', isPublished: true, categories: ['Skincare'], publishDate: new Date().toISOString().slice(0, 10) })} className={btn}>New post</button>}
+      </div>
+      {form && (
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(form); }} className="bg-white rounded-xl p-6 shadow-sm grid md:grid-cols-2 gap-4">
+          <F label="Title"><input className={input} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required /></F>
+          <F label="URL Slug (optional)"><input className={input} value={form.slug ?? ''} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="Leave blank to auto-generate" /></F>
+          <F label="Author"><input className={input} value={form.author ?? ''} onChange={(e) => setForm({ ...form, author: e.target.value })} /></F>
+          <F label="Reading time"><input className={input} value={form.readingTime ?? ''} onChange={(e) => setForm({ ...form, readingTime: e.target.value })} placeholder="e.g. 5 min read" /></F>
+          <F label="Excerpt" className="md:col-span-2"><input className={input} value={form.excerpt ?? ''} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} required /></F>
+          <F label="Cover Image URL (optional)" className="md:col-span-2"><input className={input} value={form.featuredImage ?? ''} onChange={(e) => setForm({ ...form, featuredImage: e.target.value })} /></F>
+          <F label="Content (HTML allowed)" className="md:col-span-2"><textarea className={input} rows={12} value={form.content ?? ''} onChange={(e) => setForm({ ...form, content: e.target.value })} required /></F>
+          <F label="Categories (comma separated)"><input className={input} value={(form.categories ?? []).join(', ')} onChange={(e) => setForm({ ...form, categories: e.target.value.split(',').map(x => x.trim()).filter(Boolean) })} /></F>
+          <F label="Publish Date"><input type="date" className={input} value={form.publishDate ?? ''} onChange={(e) => setForm({ ...form, publishDate: e.target.value })} /></F>
+          <label className="flex items-center gap-2 text-sm md:col-span-2"><input type="checkbox" checked={form.isPublished ?? true} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} /> Published and visible on site</label>
+          {save.isError && <p className="md:col-span-2 text-sm text-red-600">{apiError(save.error)}</p>}
+          <div className="md:col-span-2 flex gap-2">
+            <button type="submit" disabled={save.isPending} className={btn}>Save post</button>
+            <button type="button" onClick={() => setForm(null)} className={btnLine}>Cancel</button>
+          </div>
+        </form>
+      )}
+      <div className="bg-white rounded-xl shadow-sm divide-y">
+        {data.length === 0 && <p className="p-6 text-gray-500 text-sm">No blog posts yet.</p>}
+        {data.map((p) => (
+          <div key={p._id} className="p-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-medium">{p.title}{!p.isPublished && <span className="text-amber-600 font-normal ml-2">· Draft</span>}</p>
+              <p className="text-sm text-gray-500">{p.publishDate} · {p.author} · {(p.categories ?? []).join(', ')}</p>
+            </div>
+            <div className="flex gap-2">
+              <a href={`/blog/${p.slug}`} target="_blank" rel="noreferrer" className={btnLine}>View</a>
+              <button onClick={() => setForm(p)} className={btnLine}>Edit</button>
+              <button onClick={() => window.confirm('Delete this post?') && remove.mutate(p._id)} className={`${btnLine} text-red-600`}>Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -150,10 +150,11 @@ export async function findSponsor(code?: string | null): Promise<Doc | null> {
  * case), and a user re-submitting their OWN application never blocks
  * themselves. `digits` must already be the CNIC with dashes stripped.
  */
-export async function findCnicConflict(digits: string, currentUserId: string): Promise<{ userId: string; kind: 'partner' | 'kyc' } | null> {
-  const matches = await db.users.find({ $or: [{ 'partner.cnic': digits }, { 'kyc.cnic': digits }] }, { limit: 20 });
+export async function findCnicConflict(digits: string, currentUserId?: string): Promise<{ userId: string; kind: 'user' | 'partner' | 'kyc' } | null> {
+  const matches = await db.users.find({ $or: [{ cnic: digits }, { 'partner.cnic': digits }, { 'kyc.cnic': digits }] }, { limit: 20 });
   for (const other of matches) {
-    if (other._id === currentUserId) continue;
+    if (currentUserId && other._id === currentUserId) continue;
+    if (other.cnic === digits) return { userId: other._id, kind: 'user' };
     if (other.partner?.cnic === digits && ['approved', 'pending'].includes(other.partner?.status)) return { userId: other._id, kind: 'partner' };
     if (other.kyc?.cnic === digits && ['approved', 'pending'].includes(other.kyc?.status)) return { userId: other._id, kind: 'kyc' };
   }

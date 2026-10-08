@@ -2,7 +2,7 @@ import { Metadata, ResolvingMetadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { blogPosts } from '@/lib/data/blog';
+import { db } from '@/server/db';
 import TableOfContents from '@/components/blog/TableOfContents';
 import BlogCard from '@/components/blog/BlogCard';
 import { Calendar, Clock, User, ChevronRight } from 'lucide-react';
@@ -12,11 +12,14 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-// Ensure pages are statically generated
-export function generateStaticParams() {
-  return blogPosts.map((post) => ({
-    slug: post.slug,
-  }));
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+async function getPost(slug: string) {
+  const dbPost = await db.blogPosts.findOne({ slug, isPublished: true });
+  if (dbPost) return dbPost;
+  const { blogPosts: staticPosts } = await import('@/lib/data/blog');
+  return staticPosts.find(p => p.slug === slug);
 }
 
 export async function generateMetadata(
@@ -24,7 +27,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata
 ): Promise<Metadata> {
   const resolvedParams = await params;
-  const post = blogPosts.find((p) => p.slug === resolvedParams.slug);
+  const post = await getPost(resolvedParams.slug);
 
   if (!post) {
     return {
@@ -68,26 +71,30 @@ export async function generateMetadata(
 
 export default async function BlogPostPage({ params }: Props) {
   const resolvedParams = await params;
-  const post = blogPosts.find((p) => p.slug === resolvedParams.slug);
+  const post = await getPost(resolvedParams.slug);
 
   if (!post) {
     notFound();
   }
 
-  // Get 2 related posts (same category, different slug)
-  const relatedPosts = blogPosts
-    .filter((p) => p.slug !== post.slug && p.categories.some((c) => post.categories.includes(c)))
+  // Get 2 related posts
+  const allDbPosts = await db.blogPosts.find({ isPublished: true }, { sort: { publishDate: -1, createdAt: -1 } });
+  const { blogPosts: staticPosts } = await import('@/lib/data/blog');
+  const allPosts = allDbPosts.length > 0 ? allDbPosts : staticPosts;
+
+  const relatedPosts = (allPosts as any[])
+    .filter((p) => p.slug !== post.slug && (p.categories || []).some((c: string) => (post.categories || []).includes(c)))
     .slice(0, 2);
 
   // Fallback to random posts if no related posts found
   if (relatedPosts.length < 2) {
-    const additional = blogPosts
+    const additional = (allPosts as any[])
       .filter((p) => p.slug !== post.slug && !relatedPosts.find((r) => r.slug === p.slug))
       .slice(0, 2 - relatedPosts.length);
     relatedPosts.push(...additional);
   }
 
-  const formattedDate = new Date(post.publishDate).toLocaleDateString('en-US', {
+  const formattedDate = new Date(post.publishDate || post.createdAt || new Date()).toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -143,10 +150,14 @@ export default async function BlogPostPage({ params }: Props) {
     description: post.excerpt,
   };
 
+  const imageObj = post.featuredImage
+    ? (typeof post.featuredImage === 'string' ? { url: post.featuredImage, alt: post.title } : post.featuredImage)
+    : { url: '/placeholder.png', alt: post.title };
+
   const faqSchema = post.faqs && post.faqs.length > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: post.faqs.map((faq) => ({
+    mainEntity: post.faqs.map((faq: any) => ({
       '@type': 'Question',
       name: faq.question,
       acceptedAnswer: {
@@ -180,7 +191,7 @@ export default async function BlogPostPage({ params }: Props) {
 
         <div className="container mx-auto px-4 py-12 lg:py-16">
           <div className="max-w-4xl mx-auto text-center">
-            {post.categories[0] && (
+            {post.categories && post.categories[0] && (
               <span className="inline-block px-4 py-1.5 mb-6 text-sm font-bold tracking-widest text-rose-gold uppercase bg-rose-gold/10 rounded-full">
                 {post.categories[0]}
               </span>
@@ -191,7 +202,7 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-rose-gold" />
-                <span className="font-medium text-gray-900">{post.author}</span>
+                <span className="font-medium text-gray-900">{post.author || 'Admin'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-rose-gold" />
@@ -199,7 +210,7 @@ export default async function BlogPostPage({ params }: Props) {
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-rose-gold" />
-                <span>{post.readingTime}</span>
+                <span>{post.readingTime || '5 min read'}</span>
               </div>
             </div>
           </div>
@@ -210,8 +221,8 @@ export default async function BlogPostPage({ params }: Props) {
       <div className="container mx-auto px-4 py-8 mb-8">
         <div className="max-w-4xl mx-auto relative w-full aspect-square md:aspect-video bg-gray-50 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center">
           <Image
-            src={post.featuredImage.url}
-            alt={post.featuredImage.alt}
+            src={imageObj.url}
+            alt={imageObj.alt}
             fill
             priority
             className="object-contain object-center p-4"

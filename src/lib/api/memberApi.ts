@@ -201,6 +201,19 @@ export const memberApi = {
   referrals: () =>
     d<{
       people: { _id: string; name: string; joinedAt: string; type: string; orders: number; commission: number }[];
+      tree?: {
+        _id: string;
+        name: string;
+        memberCode: string | null;
+        level: number;
+        sponsorId: string;
+        type: 'business' | 'partner' | 'customer';
+        rank: string;
+        monthlyBV: number;
+        groupBV: number;
+        joinedAt: string;
+      }[];
+      levelCommissions?: { level: number; pct: number; orders: number; amount: number }[];
       guestOrders: { orders: number; commission: number };
       team: { totalMembers: number; perLevel: { level: number; count: number; partners: number }[]; groupBV: number; rank: string };
     }>(api.get('/members/referrals')),

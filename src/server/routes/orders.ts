@@ -48,6 +48,7 @@ import {
   sendNewOrderNotificationEmail,
   sendPaymentStatusEmail,
 } from '../email';
+import { sendWhatsAppNotification } from '../whatsapp';
 import { logger } from '../logger';
 
 export const orders = new Router();
@@ -877,6 +878,18 @@ export async function applyOrderStatus(orderId: string, body: z.infer<typeof upd
       await sendOrderStatusEmail(customerEmail, customerFirstName, order.orderNumber, order._id, label, order as any);
     } catch (err) {
       logger.error('Email sending error', err);
+    }
+  }
+
+  // Attempt to send WhatsApp notification
+  const customerPhone = order.shippingAddress?.phone || order.billingAddress?.phone;
+  if (customerPhone) {
+    try {
+      await sendWhatsAppNotification(customerPhone, 'order_status_update', 'en', [
+        { type: 'body', parameters: [{ type: 'text', text: order.orderNumber }, { type: 'text', text: label }] }
+      ]);
+    } catch (err) {
+      logger.error('WhatsApp sending error', err);
     }
   }
 

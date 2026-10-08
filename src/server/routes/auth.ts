@@ -18,7 +18,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from '../http';
-import { findSponsor } from '../members';
+import { findSponsor, findCnicConflict } from '../members';
 import { generateRandomToken, hashToken, generateTokenPair, verifyRefreshToken } from '../jwt';
 import { sendPasswordResetOtpEmail, sendWelcomeEmail, sendOtpEmail, canSendEmail } from '../email';
 import {
@@ -50,10 +50,16 @@ const isFuture = (v: unknown) => Boolean(v) && new Date(v as string).getTime() >
 const authLimiter = rateLimit('auth', 15 * 60 * 1000, 20, 'Too many login attempts. Please try again in 15 minutes.');
 
 router.post('/register', authLimiter, validate(registerSchema), async ({ body }) => {
-  const { firstName, lastName, email, password, phone } = body;
+  const { firstName, lastName, email, password, phone, cnic } = body;
   const normalizedEmail = email.toLowerCase().trim();
   const sponsor = await findSponsor(body.refCode);
   const referral = sponsor ? { referredBy: sponsor._id, referredAt: new Date().toISOString() } : {};
+
+  const cnicDigits = cnic.replace(/-/g, '').trim();
+  const conflict = await findCnicConflict(cnicDigits);
+  if (conflict) {
+    throw new ConflictError('This CNIC number is already registered with another account. Same CNIC number cannot be used to register multiple accounts.');
+  }
 
   const existing = await db.users.findOne({ email: normalizedEmail });
   if (existing && existing.isEmailVerified) {
@@ -69,6 +75,7 @@ router.post('/register', authLimiter, validate(registerSchema), async ({ body })
       lastName,
       email: normalizedEmail,
       phone,
+      cnic: cnicDigits,
       password: await hashPassword(password),
       isEmailVerified: true,
       isActive: true,

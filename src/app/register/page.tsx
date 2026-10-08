@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { m as motion } from 'framer-motion';
 import Link from 'next/link';
-import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, CreditCard } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearError, register as registerUser } from '@/store/slices/authSlice';
 import { RootState } from '@/store';
@@ -18,6 +18,7 @@ interface RegisterFormData {
   lastName: string;
   email: string;
   phone?: string;
+  cnic: string;
   password: string;
   confirmPassword: string;
   terms: boolean;
@@ -44,6 +45,8 @@ export default function RegisterPage() {
   const displayError = formError || storeError;
   const alreadyExists =
     !!displayError && /already exists|sign in/i.test(displayError);
+  const cnicAlreadyRegistered =
+    !!displayError && /cnic.*already registered|same cnic/i.test(displayError);
 
   const onSubmit = async (data: RegisterFormData) => {
     setFormError('');
@@ -139,6 +142,21 @@ export default function RegisterPage() {
             error={errors.phone?.message}
           />
 
+          <Input
+            label="CNIC Number *"
+            type="text"
+            placeholder="35202-1234567-1"
+            icon={<CreditCard className="w-5 h-5 text-gray-500" />}
+            {...register('cnic', {
+              required: 'CNIC number is required.',
+              pattern: {
+                value: /^\d{5}-?\d{7}-?\d$/,
+                message: 'CNIC format must be like 35202-1234567-1 (13 digits)',
+              },
+            })}
+            error={errors.cnic?.message}
+          />
+
           <div className="relative">
             <Input
               label="Password"
@@ -217,6 +235,11 @@ export default function RegisterPage() {
                 >
                   Go to Sign In →
                 </Link>
+              )}
+              {cnicAlreadyRegistered && (
+                <p className="mt-1 font-medium">
+                  ⚠️ Is yeh aapka apna CNIC hai? Customer Care se rabta karen.
+                </p>
               )}
             </div>
           )}

@@ -87,6 +87,7 @@ const Header = () => {
   const topLinks = [
     { name: 'Catalogue', href: '/catalogue' },
     { name: 'Join us', href: '/join' },
+    { name: 'Wholesale (B2B)', href: '/business' },
     { name: 'Journal', href: '/blog' },
   ];
 
@@ -146,6 +147,11 @@ const Header = () => {
 
           {/* Right: icons */}
           <div className="flex items-center justify-end gap-3.5 sm:gap-5 lg:gap-7 text-ink">
+            {isAuthenticated && (user?.role === 'admin' || user?.role === 'warehouse') && (
+              <Link href="/warehouse" className="hidden lg:inline nav-link text-xs uppercase tracking-wider text-muted hover:text-ink">
+                Warehouse
+              </Link>
+            )}
             {isAuthenticated && user?.role === 'admin' && (
               <Link href="/admin" className="hidden lg:inline nav-link">
                 Admin

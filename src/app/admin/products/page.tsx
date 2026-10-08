@@ -377,6 +377,12 @@ export default function AdminProductsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Price
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    BV / BP
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Wholesale
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Stock
                   </th>
@@ -391,7 +397,7 @@ export default function AdminProductsPage() {
               <tbody className="divide-y divide-gray-200">
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center">
+                    <td colSpan={9} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <Package className="w-12 h-12 text-gray-300 mb-4" />
                         <p className="text-gray-500 mb-2">No products found</p>
@@ -444,6 +450,12 @@ export default function AdminProductsPage() {
                       ) : (
                         <span className="font-medium text-black">{formatPrice(product.basePrice)}</span>
                       )}
+                    </td>
+                    <td className="px-4 py-4 text-xs font-semibold text-rose">
+                      {typeof product.bv === 'number' && product.bv >= 0 ? `${product.bv} BP` : `${Math.max(1, Math.round(product.basePrice / 100))} BP (auto)`}
+                    </td>
+                    <td className="px-4 py-4 text-xs text-gray-600">
+                      {product.wholesalePrice ? `${formatPrice(product.wholesalePrice)} (min ${product.wholesaleMinQty || 6})` : 'Default 30%'}
                     </td>
                     <td className="px-6 py-4 text-gray-600">{product.stock}</td>
                     <td className="px-6 py-4 flex flex-col items-start gap-1">

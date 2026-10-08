@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import xss from 'xss';
 import nodemailer from 'nodemailer';
-import { db, populate } from '../db';
+import slugify from 'slugify';
+import { db, populate, getSql } from '../db';
 import {
   Router,
   json,
@@ -368,12 +369,31 @@ contact.post(
 // ===========================================================================
 export const analytics = new Router();
 
-analytics.get('/summary', adminOnly, async () => {
-  const [paid, allOrders, top, activeProducts] = await Promise.all([
-    db.orders.find({ paymentStatus: { $in: ['paid', 'partially_refunded'] } }),
-    db.orders.find({}),
+analytics.get('/summary', adminOnly, async ({ query }) => {
+  const sql = getSql();
+  const now = new Date();
+  const from = query.from ? new Date(String(query.from)).toISOString() : new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const to = query.to ? new Date(new Date(String(query.to)).getTime() + 86400000).toISOString() : new Date(now.getTime() + 86400000).toISOString();
+
+  const [paidRows, allOrders, top, activeProducts, dailyRows, cityRows, customerCount] = await Promise.all([
+    sql`select coalesce(sum((data->>'total')::numeric),0) as revenue, count(*)::int as cnt
+        from orders where data->>'paymentStatus' in ('paid','partially_refunded')
+        and created_at >= ${from} and created_at < ${to}`,
+    db.orders.find({ createdAt: { $gte: from, $lte: to } }),
     db.products.find({ isActive: true }, { sort: { soldCount: -1 }, limit: 10 }),
     db.products.find({ isActive: true }),
+    sql`select date_trunc('day', created_at)::date::text as day,
+               count(*)::int as orders,
+               coalesce(sum((data->>'total')::numeric),0) as revenue
+        from orders
+        where created_at >= ${new Date(Date.now() - 30 * 86400000).toISOString()}
+        group by 1 order by 1`,
+    sql`select data->>'city' as city, count(*)::int as orders, coalesce(sum((data->>'total')::numeric),0) as revenue
+        from orders
+        where data->>'status' not in ('cancelled','refunded','returned')
+        and created_at >= ${from} and created_at < ${to}
+        group by 1 order by 2 desc limit 15`,
+    sql`select count(*)::int as cnt from users where data->>'role' = 'customer'`,
   ]);
 
   const ordersByStatus: Record<string, number> = {};
@@ -383,19 +403,17 @@ analytics.get('/summary', adminOnly, async () => {
     success: true,
     message: 'Analytics summary fetched',
     data: {
-      revenue: paid.reduce((s, o) => s + Number(o.total || 0), 0),
-      paidOrders: paid.length,
+      revenue: Number((paidRows[0] as any).revenue),
+      paidOrders: Number((paidRows[0] as any).cnt),
+      customerCount: Number((customerCount[0] as any).cnt),
       ordersByStatus,
       topProducts: top.map((p) => ({
-        _id: p._id,
-        name: p.name,
-        slug: p.slug,
-        soldCount: p.soldCount,
-        rating: p.rating,
-        reviewCount: p.reviewCount,
-        basePrice: p.basePrice,
+        _id: p._id, name: p.name, slug: p.slug,
+        soldCount: p.soldCount, rating: p.rating, reviewCount: p.reviewCount, basePrice: p.basePrice,
       })),
       lowStockCount: activeProducts.filter((p) => (p.stock ?? 0) < (p.lowStockThreshold ?? 30)).length,
+      dailyRevenue: (dailyRows as any[]).map((r) => ({ day: r.day, orders: r.orders, revenue: Number(r.revenue) })),
+      cityBreakdown: (cityRows as any[]).map((r) => ({ city: r.city || 'Unknown', orders: r.orders, revenue: Number(r.revenue) })),
     },
   });
 });
@@ -457,3 +475,84 @@ settings.put('/', adminOnly, validate(settingsSchema), async ({ body }) => {
 });
 
 export { AppError, ForbiddenError };
+
+// ===========================================================================
+// Blog posts (admin CRUD + public read)
+// ===========================================================================
+export const blog = new Router();
+
+const blogSchema = z.object({
+  title: z.string().min(2).max(200),
+  slug: z.string().min(2).max(200).optional(),
+  excerpt: z.string().max(500).optional(),
+  content: z.string().max(50000).optional(),
+  featuredImage: z.string().optional(),
+  author: z.string().max(80).optional(),
+  categories: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  isPublished: z.boolean().optional(),
+  publishDate: z.string().optional(),
+  readingTime: z.string().max(30).optional(),
+});
+
+// Public — list published posts
+blog.get('/', async ({ query }) => {
+  const limit = Math.min(50, Number(query.limit ?? 20));
+  const cat = query.category ? String(query.category) : undefined;
+  const filter: Record<string, any> = { isPublished: true };
+  if (cat) filter.categories = cat;
+  const posts = await db.blogPosts.find(filter, { sort: { publishDate: -1, createdAt: -1 }, limit });
+  return json({ success: true, message: 'Blog posts', data: posts });
+});
+
+// Public — single post by slug
+blog.get('/:slug', async ({ params }) => {
+  const post = await db.blogPosts.findOne({ slug: params.slug, isPublished: true });
+  if (!post) throw new NotFoundError('Blog post');
+  return json({ success: true, message: 'Blog post', data: post });
+});
+
+// Admin — all posts (including drafts)
+blog.get('/admin/all', adminOnly, async () => {
+  const posts = await db.blogPosts.find({}, { sort: { createdAt: -1 }, limit: 200 });
+  return json({ success: true, message: 'All blog posts', data: posts });
+});
+
+// Admin — create
+blog.post('/', adminOnly, validate(blogSchema), async ({ body }) => {
+  const slug = body.slug
+    ? String(body.slug).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+    : slugify(body.title, { lower: true, strict: true }) + '-' + Date.now().toString(36).slice(-4);
+  if (await db.blogPosts.findOne({ slug })) throw new BadRequestError('A post with this slug already exists');
+  const post = await db.blogPosts.create({
+    ...body,
+    slug,
+    categories: body.categories ?? [],
+    tags: body.tags ?? [],
+    author: body.author ?? 'Admin',
+    isPublished: body.isPublished ?? false,
+    publishDate: body.publishDate ?? new Date().toISOString().slice(0, 10),
+    readingTime: body.readingTime ?? '3 min read',
+  });
+  return json({ success: true, message: 'Blog post created', data: post }, 201);
+});
+
+// Admin — update
+blog.put('/:id', adminOnly, validate(blogSchema), async ({ params, body }) => {
+  const existing = await db.blogPosts.findById(params.id);
+  if (!existing) throw new NotFoundError('Blog post');
+  const slug = body.slug
+    ? String(body.slug).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+    : existing.slug;
+  if (slug !== existing.slug && await db.blogPosts.findOne({ slug })) throw new BadRequestError('A post with this slug already exists');
+  const post = await db.blogPosts.updateById(params.id, { ...body, slug, categories: body.categories ?? existing.categories, tags: body.tags ?? existing.tags });
+  return json({ success: true, message: 'Blog post updated', data: post });
+});
+
+// Admin — delete
+blog.delete('/:id', adminOnly, async ({ params }) => {
+  const post = await db.blogPosts.deleteById(params.id);
+  if (!post) throw new NotFoundError('Blog post');
+  return json({ success: true, message: 'Blog post deleted' });
+});
+

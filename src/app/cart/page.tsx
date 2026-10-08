@@ -29,6 +29,14 @@ export default function CartPage() {
   const totalDiscount = productDiscount + couponDiscountAmount;
   const total = effectiveSubtotal + shipping - couponDiscountAmount;
 
+  const estimatedBV = cartItems.reduce((sum, item) => {
+    const unitPoints = typeof (item.product as any).bv === 'number' && (item.product as any).bv >= 0
+      ? (item.product as any).bv
+      : Math.max(1, Math.round(item.price / 100));
+    return sum + unitPoints * item.quantity;
+  }, 0);
+  const estimatedLoyaltyPoints = Math.max(1, Math.round(effectiveSubtotal / 100));
+
   useEffect(() => {
     if (!isAuthenticated) return;
     setSyncing(true);
@@ -243,6 +251,18 @@ export default function CartPage() {
                   <span>Total</span>
                   <span>{formatPrice(total)}</span>
                 </div>
+                {effectiveSubtotal > 0 && (
+                  <div className="pt-2 space-y-1.5">
+                    <div className="flex justify-between items-center text-xs text-rose font-medium bg-[#fcf5f7] px-3 py-1.5 rounded border border-rose/20">
+                      <span>✨ Order Points (BV / BP):</span>
+                      <span className="font-bold">{estimatedBV} BP</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-gray-700 bg-gray-50 px-3 py-1.5 rounded border border-gray-200">
+                      <span>🎁 Reward Points:</span>
+                      <span className="font-medium">+{estimatedLoyaltyPoints} pts</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mb-6">

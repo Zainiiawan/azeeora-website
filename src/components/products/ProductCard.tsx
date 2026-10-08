@@ -20,7 +20,7 @@ interface ProductCardProps {
     Product,
     '_id' | 'name' | 'slug' | 'images' | 'basePrice' | 'rating' | 'reviewCount'
   > &
-    Partial<Pick<Product, 'compareAtPrice' | 'isFeatured' | 'discount' | 'isComingSoon' | 'launchDate'>>;
+    Partial<Pick<Product, 'compareAtPrice' | 'isFeatured' | 'discount' | 'isComingSoon' | 'launchDate' | 'bv'>>;
   className?: string;
   priority?: boolean;
 }
@@ -182,13 +182,18 @@ const ProductCard = ({ product, className, priority = false }: ProductCardProps)
         <Link href={`/products/${product.slug}`}>
           <h3 className="font-serif text-[1.2rem] text-ink leading-snug line-clamp-2 hover:underline underline-offset-4 decoration-1">{product.name}</h3>
         </Link>
-        <p className="mt-2 text-[0.95rem]">
-          <span className={cn('font-medium', onSale ? 'text-sale' : 'text-ink')}>{formatPrice(effectivePrice)}</span>
-          {onSale && <span className="ml-2.5 text-muted line-through font-light">{formatPrice(product.basePrice)}</span>}
-        </p>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p className="text-[0.95rem]">
+            <span className={cn('font-medium', onSale ? 'text-sale' : 'text-ink')}>{formatPrice(effectivePrice)}</span>
+            {onSale && <span className="ml-2 text-muted line-through font-light text-xs">{formatPrice(product.basePrice)}</span>}
+          </p>
+          <span className="text-[0.7rem] tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#fcf5f7] text-rose border border-rose/30">
+            {typeof product.bv === 'number' && product.bv >= 0 ? product.bv : Math.max(1, Math.round(effectivePrice / 100))} BP
+          </span>
+        </div>
         {memberPrice && (
-          <p className="mt-1 text-[0.8rem] text-rose">
-            {memberPrice.label}: <span className="font-medium">{formatPrice(memberPrice.price)}</span>
+          <p className="mt-1 text-[0.8rem] text-rose font-medium">
+            {memberPrice.label}: {formatPrice(memberPrice.price)}
           </p>
         )}
       </div>

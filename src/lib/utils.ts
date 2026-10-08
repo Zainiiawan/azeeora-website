@@ -64,3 +64,14 @@ export function displayName(name?: string): string {
   if (name !== name.toUpperCase()) return name;
   return name.toLowerCase().replace(/\b\p{L}/gu, (c) => c.toUpperCase());
 }
+
+export function getCourierTrackingUrl(courier: string, trackingNumber: string): string | null {
+  if (!trackingNumber) return null;
+  const c = courier.toLowerCase();
+  if (c.includes('tcs')) return `https://www.tcsexpress.com/tracking?track=${trackingNumber}`;
+  if (c.includes('leopard')) return `https://www.leopardscourier.com/leopards-tracking?track=${trackingNumber}`;
+  if (c.includes('trax')) return `https://trax.pk/tracking?tracking_number=${trackingNumber}`;
+  if (c.includes('callcourier')) return `https://callcourier.com.pk/tracking/?tc=${trackingNumber}`;
+  if (c.includes('m&p') || c.includes('muller')) return `https://mulphilog.com/track-your-shipment/?cn=${trackingNumber}`;
+  return null;
+}
